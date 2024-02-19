@@ -1,4 +1,6 @@
-# Adapted from github.com/vllm/worker/worker.py
+"""
+Adapted from https://github.com/vllm/worker/worker.py
+"""
 import copy
 import time
 from typing import List, Tuple, Optional

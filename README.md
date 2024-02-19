@@ -2,58 +2,49 @@
 
 A disaggregated Large Language Model (LLM) serving system.
 
-Code & artifacts for the paper <TODO> (link: <TODO>)
-
-It is fast with:
-- Prefill stage and decoding stage disaggregation
-- preemptive scheduling
-- various scheduling algorithms (FCFS / MLFQ / ...)
-- continuous batching (iterational-level scheduling and selective batching)
-- pure C++ GPT implementation
-- flash attention kernel (xFormers' kernels for non-GQA models and hand-written high-performance kernels for models with GQA)
-
-It is memory efficient with:
-- paged attention kernel
-- proactive memory swapping
-
-It is scalable with:
-- megatron-LM tensor parallelism
-- streaming pipeline parallelism
-
 It supports:
+- GPT-2 (gpt2, gpt2-xl, ...)
 - OPT (facebook/opt-1.3b, facebook/opt-6.7b, ...)
-- LLaMA2 (meta-llama/Llama-2-7b, meta-llama/Llama-2-13b, ...) (will be supported in the future)
+- LLaMA2 (meta-llama/Llama-2-7b, meta-llama/Llama-2-13b, ...)
 
-## Installation
+## Build && Install
+```shell
+# clone the project
+git clone git@github.com:LLMServe/DistServe.git && cd DistServe
 
-### Requirements
+# setup the distserve conda environment
+conda env create -f environment.yml && conda activate distserve
 
-- NVIDIA GPU with compute capability >= 6.0 (Pascal architecture). Maxwell architecture is not supported since it does not support FP16.
-- The NVIDIA GPU driver.
-- CUDA toolkit: https://developer.nvidia.com/cuda-downloads
-- NCCL: https://docs.nvidia.com/deeplearning/nccl/install-guide/index.html#down
+# clone and build the SwiftTransformer library  
+git clone https://github.com/LLMServe/SwiftTransformer.git && cd SwiftTransformer && git submodule update --init --recursive && cmake -B build && cmake --build build -j$(nproc) && cd ..
 
-### Installation
-
-- git clone the repo
-- Create a conda environment: `conda env create -f environment.yml`
-- Activate the conda environment: `conda activate distserve`
-- Clone the C++ backend, SwiftTransformer, via `git clone https://github.com/LLMServe/SwiftTransformer.git && cd SwiftTransformer && git submodule update --init --recursive`
-- Build the SwiftTransformer library `cd SwiftTransformer; cmake -B build; cmake --build build -j$(nproc)`
-- On successful builds, you should see `libst_pybinding.so` under the `SwiftTransformer/build/lib` directory
+# install distserve
+pip install -e .
+```
 
 ## Launching
 
-### Launchng a Ray Cluster
+### Launch Ray Cluster
 
-DistLLM relies on [ray](https://ray.io) to achieve parallelism. If you does not launch a ray cluster in advance, ray will automatically initiate a mini cluster, consisting only all gpus on the current node. You may need to start the ray cluster manually in advance if you want to use multiple nodes for inference.
+DistServe relies on [ray](https://ray.io) to implement workers. If you do not launch a ray cluster in advance, it will automatically initiate a cluster consisting of all the gpus on the current node. You may need to start the ray cluster manually in advance if you want to use multiple nodes for inference.
 
-### Run the Example
+### Run offline Example
 
 We provide an offline examples to play with, you may try `distserve/exmples/offline.py`.
 
 ### Launch the API Server
 
-To launch the api server, try out `distserve/api_server/distserve_api_server.py`
+To launch the online server API server, try out `distserve/api_server/distserve_api_server.py`
 
-
+## Citation
+If you use DistServe for your research, please cite our [paper](https://arxiv.org/abs/2401.09670):
+```
+@misc{zhong2024distserve,
+      title={DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving}, 
+      author={Yinmin Zhong and Shengyu Liu and Junda Chen and Jianbo Hu and Yibo Zhu and Xuanzhe Liu and Xin Jin and Hao Zhang},
+      year={2024},
+      eprint={2401.09670},
+      archivePrefix={arXiv},
+      primaryClass={cs.DC}
+}
+```
