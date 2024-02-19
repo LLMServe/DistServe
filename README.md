@@ -6,7 +6,9 @@ phases and batch the computation of prefill and decoding
 across all users and requests. We find that this strategy not
 only leads to strong prefill-decoding interferences but also
 couples the resource allocation and parallelism plans for both
-phases. In DistServe, you can simply set the parallelism configs and scheduling strategies for the two phases and it will work just like a single instance which handles the KV-Cache communication and memory management automatically.  
+phases. In DistServe, you can simply set the parallelism configs and scheduling strategies for the two phases and it will work just like a single instance which handles the KV-Cache communication and memory management automatically. 
+
+It utilizes a high-performance C++ Transformer inference library SwiftTransformer as the execution backend, which supports many features like model/pipeline parallelism, FlashAttention, Continuous Batching, and PagedAttention.
 
 It supports:
 - GPT-2 (gpt2, gpt2-xl, ...)
