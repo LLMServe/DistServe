@@ -168,6 +168,7 @@ if __name__ == "__main__":
             waiting_block_prop_threshold=0.05
         )
     )
+    print("llm engine inited")
 
     uvicorn_config = uvicorn.Config(
         app,

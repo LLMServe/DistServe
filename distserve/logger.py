@@ -22,7 +22,7 @@ class NewLineFormatter(logging.Formatter):
         return msg
 
 
-_root_logger = logging.getLogger("fastserve")
+_root_logger = logging.getLogger("distserve")
 _default_handler = None
 
 
