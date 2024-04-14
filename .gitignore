@@ -2,6 +2,9 @@
 *.nsys-rep
 *.sqlite
 
+# Ignore /temp
+/temp
+
 # Ignore profile database
 profile_database
 
