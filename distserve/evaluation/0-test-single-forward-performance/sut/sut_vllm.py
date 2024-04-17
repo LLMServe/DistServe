@@ -29,7 +29,7 @@ class VLLMSUT(SystemUnderTest):
             max_num_seqs = worker_param.max_req_num,
             gpu_memory_utilization=0.92,
             block_size = 16,
-            max_num_batched_tokens = max(max_num_tokens+1, 4096),   # NOTE. vLLM will warn us if max_num_batched_tokens is smallerthan the model's context length
+            max_num_batched_tokens = max(max_num_tokens+1, 4096),   # NOTE. vLLM will warn us if max_num_batched_tokens is smaller than the model's context length
         )
 
     def inference(

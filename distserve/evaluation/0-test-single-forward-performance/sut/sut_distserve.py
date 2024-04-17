@@ -15,11 +15,11 @@ from .abstract_sut import SystemUnderTest, get_input_ids
 
 BLOCK_SIZE = 16
 
-# @ray.remote(num_gpus=1, runtime_env={ "nsight": {
-#     "t": "cuda,cudnn,cublas",
-#     "cuda-memory-usage": "true",
-#     "cuda-graph-trace": "graph",
-# }})
+@ray.remote(num_gpus=1, runtime_env={ "nsight": {
+    "t": "cuda,cudnn,cublas",
+    "cuda-memory-usage": "true",
+    "cuda-graph-trace": "graph",
+}})
 class Worker:
     def __init__(
         self,
@@ -121,15 +121,7 @@ class DistServeSUT(SystemUnderTest):
                 pipeline_parallel_rank = 0,
                 pipeline_parallel_size = 1
             )
-            # worker = Worker.remote(
-            #     worker_id = tp_id,
-            #     model_config = self.model_config,
-            #     cache_config = self.cache_config,
-            #     parallel_config = parallel_config,
-            #     tensor_parallel_id = tp_nccl_comm_id,
-            #     pipeline_parallel_id = pp_nccl_comm_id
-            # )
-            worker = Worker(
+            worker = Worker.remote(
                 worker_id = tp_id,
                 model_config = self.model_config,
                 cache_config = self.cache_config,
@@ -137,19 +129,27 @@ class DistServeSUT(SystemUnderTest):
                 tensor_parallel_id = tp_nccl_comm_id,
                 pipeline_parallel_id = pp_nccl_comm_id
             )
+            # worker = Worker(
+            #     worker_id = tp_id,
+            #     model_config = self.model_config,
+            #     cache_config = self.cache_config,
+            #     parallel_config = parallel_config,
+            #     tensor_parallel_id = tp_nccl_comm_id,
+            #     pipeline_parallel_id = pp_nccl_comm_id
+            # )
             self.workers.append(worker)
         
         print("Loading weights...")
-        # ray.get([worker.init_model.remote() for worker in self.workers])
-        self.workers[0].init_model()
+        ray.get([worker.init_model.remote() for worker in self.workers])
+        # self.workers[0].init_model()
         
         print("Initializing kv cache...")
         block_needed = 0
         for input_param in input_params:
             cur_block_needed = input_param.batch_size * ((input_param.input_len+input_param.output_len-1+BLOCK_SIZE-1)//BLOCK_SIZE)
             block_needed = max(block_needed, cur_block_needed)
-        # ray.get([worker.init_kvcache.remote(block_needed) for worker in self.workers])
-        self.workers[0].init_kvcache(block_needed)
+        ray.get([worker.init_kvcache.remote(block_needed) for worker in self.workers])
+        # self.workers[0].init_kvcache(block_needed)
 
     def inference(
         self,
@@ -171,19 +171,19 @@ class DistServeSUT(SystemUnderTest):
         
         # Prefill phase
         prefill_start_time = time.perf_counter()
-        # last_turn_output_ids = ray.get([
-        #     worker.step.remote(
-        #         prompt_token_ids,
-        #         [0 for _ in range(input_param.batch_size)],
-        #         block_table
-        #     )
-        #     for worker in self.workers
-        # ])[0]
-        last_turn_output_ids = self.workers[0].step(
-            prompt_token_ids,
-            [0 for _ in range(input_param.batch_size)],
-            block_table
-        )
+        last_turn_output_ids = ray.get([
+            worker.step.remote(
+                prompt_token_ids,
+                [0 for _ in range(input_param.batch_size)],
+                block_table
+            )
+            for worker in self.workers
+        ])[0]
+        # last_turn_output_ids = self.workers[0].step(
+        #     prompt_token_ids,
+        #     [0 for _ in range(input_param.batch_size)],
+        #     block_table
+        # )
         prefill_end_time = time.perf_counter()
         prefill_time_usage = (prefill_end_time - prefill_start_time)*1000
         for i in range(input_param.batch_size):
@@ -193,25 +193,25 @@ class DistServeSUT(SystemUnderTest):
         decoding_time_usages = []
         for step in range(input_param.output_len-1):
             decoding_start_time = time.perf_counter()
-            # last_turn_output_ids = ray.get([
-            #     worker.step.remote(
-            #         [
-            #             [x]
-            #             for x in last_turn_output_ids
-            #         ],
-            #         [input_param.input_len+step for _ in range(input_param.batch_size)],
-            #         block_table
-            #     )
-            #     for worker in self.workers
-            # ])[0]
-            last_turn_output_ids = self.workers[0].step(
-                [
-                    [x]
-                    for x in last_turn_output_ids
-                ],
-                [input_param.input_len+step for _ in range(input_param.batch_size)],
-                block_table
-            )
+            last_turn_output_ids = ray.get([
+                worker.step.remote(
+                    [
+                        [x]
+                        for x in last_turn_output_ids
+                    ],
+                    [input_param.input_len+step for _ in range(input_param.batch_size)],
+                    block_table
+                )
+                for worker in self.workers
+            ])[0]
+            # last_turn_output_ids = self.workers[0].step(
+            #     [
+            #         [x]
+            #         for x in last_turn_output_ids
+            #     ],
+            #     [input_param.input_len+step for _ in range(input_param.batch_size)],
+            #     block_table
+            # )
             decoding_end_time = time.perf_counter()
             decoding_time_usages.append((decoding_end_time - decoding_start_time)*1000)
             for i in range(input_param.batch_size):
