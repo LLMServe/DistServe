@@ -44,6 +44,7 @@ def api_server_starter_routine(
     """
     Start the target API server on the target port
     """
+    use_dummy_weight = os.environ.get("USE_DUMMY_WEIGHT", "0") in ["1", "true", "True"]
     if args.backend == "vllm":
         tp_world_size = MODEL_TO_PARALLEL_PARAMS[args.model]["vllm"]
         script = f"""
@@ -51,7 +52,8 @@ conda activate vllm;
 python -u -m vllm.entrypoints.api_server \\
     --host 0.0.0.0 --port {port} \\
     --engine-use-ray --disable-log-requests \\
-    --model {args.model} --load-format dummy --dtype float16 \\
+    --model {args.model} --dtype float16 \\
+    {"--load-format dummy" if use_dummy_weight else ""} \\
     -tp {tp_world_size} \\
     --block-size 16 --seed 0 \\
     --swap-space 16 \\
@@ -62,6 +64,7 @@ python -u -m vllm.entrypoints.api_server \\
 
     elif args.backend == "deepspeed":
         tp_world_size = MODEL_TO_PARALLEL_PARAMS[args.model]["deepspeed"]
+        assert not use_dummy_weight, "DeepSpeed does not support dummy weights, please remove `USE_DUMMY_WEIGHT` from the environment variables."
         script = f"""
 conda activate deepspeed-mii;
 set -u https_proxy; set -u http_proxy; set -u all_proxy;
@@ -84,7 +87,7 @@ python -m distserve.api_server.distserve_api_server \\
     --port {port} \\
     --model {args.model} \\
     --tokenizer {args.model} \\
-    --use-dummy-weights \\
+    {"--use-dummy-weights" if use_dummy_weight else ""} \\
     \\
     --context-tensor-parallel-size {context_tp} \\
     --context-pipeline-parallel-size {context_pp} \\

@@ -34,6 +34,7 @@ async def run_some_requests(
     requests: list[TestRequest],
     timestamps: list[float],
     output_descrip_str: str,
+    verbose: bool
 ) -> list[ReqResult]:
     """
     Issue a bunch of requests on their corresponding timestamps, and return the ReqResults
@@ -62,7 +63,7 @@ async def run_some_requests(
         issued_pbar.update(1)
         issued_pbar.refresh()
         request_func = backends.BACKEND_TO_REQUEST_FUNCS[backend]
-        output = await request_func(host, port, request, first_token_generated_pbar, finished_pbar)
+        output = await request_func(host, port, request, first_token_generated_pbar, finished_pbar, verbose)
 
         if output is None:
             return
@@ -102,7 +103,8 @@ def benchmark_serving(
     dataset: Dataset,
     req_timestamps: list[float],
     num_prompts: int,
-    request_rate: float
+    request_rate: float,
+    verbose: bool
 ) -> list[ReqResult]:
     """
     Perform online serving benchmark under the given num_prompts and request_rate
@@ -126,7 +128,7 @@ def benchmark_serving(
     timestamps = timestamps.tolist()
 
     output_descrip_str = f"{backend}, {dataset.dataset_name}, ({num_prompts}, {request_rate})"
-    benchmark_result = asyncio.run(run_some_requests(backend, host, port, requests, timestamps, output_descrip_str))
+    benchmark_result = asyncio.run(run_some_requests(backend, host, port, requests, timestamps, output_descrip_str, verbose))
     return benchmark_result
 
 
@@ -187,7 +189,8 @@ def main(args: argparse.Namespace):
             dataset,
             req_timestamps,
             num_prompts,
-            request_rate
+            request_rate,
+            args.verbose
         )
         metrics = BenchmarkMetrics.from_req_results(result)
         print(metrics)
@@ -265,6 +268,11 @@ if __name__ == "__main__":
         "--uniform-distrib",
         action="store_true",
         help="Use uniform distribution instead of Poisson"
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print prompts & completions"
     )
 
     args = parser.parse_args()

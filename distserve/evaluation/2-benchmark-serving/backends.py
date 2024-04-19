@@ -19,7 +19,8 @@ async def _async_request_vllm_like_interface(
     payload: dict,
     request: TestRequest,
     first_token_generated_pbar: tqdm,
-    finished_pbar: tqdm
+    finished_pbar: tqdm,
+    verbose: bool   # Print the prompt and completion
 ) -> ReqResult:
     async with aiohttp.ClientSession(timeout=AIOHTTP_TIMEOUT) as session:
         issue_time = time.perf_counter()
@@ -37,7 +38,10 @@ async def _async_request_vllm_like_interface(
                     complete_time = time.perf_counter()
                     if abs(num_tokens-request.output_len) > 2:
                         print(f"WARNING: num_tokens ({num_tokens}) != request.output_len ({request.output_len})")
-                    # print(data.decode("utf-8").strip("\0"))
+                    if verbose:
+                        print()
+                        print(f"Prompt: {request.prompt}")
+                        print(f"Completion: {data.decode('utf-8').strip(chr(0))}")
                 else:
                     print(response)
                     print(response.status)
@@ -62,7 +66,8 @@ async def async_request_vllm(
     port: int,
     request: TestRequest,
     first_token_generated_pbar: tqdm,
-    finished_pbar: tqdm
+    finished_pbar: tqdm,
+    verbose: bool
 ) -> ReqResult:
     api_url = f"http://{host}:{port}/generate"
     payload = {
@@ -81,7 +86,8 @@ async def async_request_vllm(
         payload,
         request,
         first_token_generated_pbar,
-        finished_pbar
+        finished_pbar,
+        verbose
     )   
 
 async def async_request_lightllm(
@@ -89,7 +95,8 @@ async def async_request_lightllm(
     port: int,
     request: TestRequest,
     first_token_generated_pbar: tqdm,
-    finished_pbar: tqdm
+    finished_pbar: tqdm,
+    verbose: bool
 ) -> Optional[ReqResult]:
     api_url = f"http://{host}:{port}/generate_stream"
     payload = {
@@ -105,7 +112,8 @@ async def async_request_lightllm(
         payload,
         request,
         first_token_generated_pbar,
-        finished_pbar
+        finished_pbar,
+        verbose
     )
         
 async def async_request_deepspeed(
@@ -113,7 +121,8 @@ async def async_request_deepspeed(
     port: int,
     request: TestRequest,
     first_token_generated_pbar: tqdm,
-    finished_pbar: tqdm
+    finished_pbar: tqdm,
+    verbose: bool
 ) -> Optional[ReqResult]:
     api_url = f"http://{host}:{port}/generate"
     payload = {
@@ -129,7 +138,8 @@ async def async_request_deepspeed(
         payload,
         request,
         first_token_generated_pbar,
-        finished_pbar
+        finished_pbar,
+        verbose
     )
 
 BACKEND_TO_PORTS = {

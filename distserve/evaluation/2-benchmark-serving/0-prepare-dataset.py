@@ -55,7 +55,8 @@ def read_dataset(
             
             result.append(TestRequest(prompt, prompt_len, output_len))
         
-        return Dataset(f"sharegpt-mt-{args.sharegpt_min_turns}-mipt-{args.sharegpt_min_prompt_turns}-mxpt-{args.sharegpt_max_prompt_turns}", result)
+        # return Dataset(f"sharegpt-mt-{args.sharegpt_min_turns}-mipt-{args.sharegpt_min_prompt_turns}-mxpt-{args.sharegpt_max_prompt_turns}", result)
+        return Dataset(f"sharegpt", result)
     
     elif name.lower() == "alpaca":
         with open(dataset_path, "r") as f:
@@ -169,7 +170,8 @@ def read_dataset(
                         answer_len
                     ))
                     
-        return Dataset(f"longbench-mipl-{args.longbench_min_prompt_len}-mxpl-{args.longbench_max_prompt_len}", filtered_dataset)
+        # return Dataset(f"longbench-mipl-{args.longbench_min_prompt_len}-mxpl-{args.longbench_max_prompt_len}", filtered_dataset)
+        return Dataset(f"longbench", filtered_dataset)
     
     elif name.lower() == "humaneval":
         filtered_dataset = []
