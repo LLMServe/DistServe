@@ -15,11 +15,7 @@ from .abstract_sut import SystemUnderTest, get_input_ids
 
 BLOCK_SIZE = 16
 
-@ray.remote(num_gpus=1, runtime_env={ "nsight": {
-    "t": "cuda,cudnn,cublas",
-    "cuda-memory-usage": "true",
-    "cuda-graph-trace": "graph",
-}})
+@ray.remote(num_gpus=1)
 class Worker:
     def __init__(
         self,

@@ -38,7 +38,7 @@ def api_server_starter_routine(
     if args.backend == "vllm":
         tp_world_size = MODEL_TO_PARALLEL_PARAMS[args.model]["vllm"]
         script = f"""
-conda activate distserve-vllm;
+conda activate vllm;
 python -u -m vllm.entrypoints.api_server \\
     --host 0.0.0.0 --port {port} \\
     --engine-use-ray --disable-log-requests \\
