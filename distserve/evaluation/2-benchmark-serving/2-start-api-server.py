@@ -10,20 +10,29 @@ import multiprocessing
 from backends import BACKEND_TO_PORTS
 
 MODEL_TO_PARALLEL_PARAMS = {
+    "facebook/opt-1.3b": {
+        "vllm": 1,
+        "deepspeed": 1,
+        "distserve": (1, 1, 1, 1)
+    },
     "facebook/opt-6.7b": {
         "vllm": 1,
+        "deepspeed": 1,
         "distserve": (1, 1, 1, 1)   # (context_pp, context_tp, decoding_pp, decoding_tp)
     },
     "facebook/opt-13b": {
         "vllm": 1,
+        "deepspeed": 1,
         "distserve": (2, 1, 1, 1)
     },
     "facebook/opt-66b": {
         "vllm": 4,
+        "deepspeed": 4,
         "distserve": (4, 1, 2, 2)
     },
     "facebook/opt-175b": {
         "vllm": 8,
+        "deepspeed": 8,
         "distserve": (3, 3, 4, 3)
     },
 }
@@ -54,7 +63,7 @@ python -u -m vllm.entrypoints.api_server \\
     elif args.backend == "deepspeed":
         tp_world_size = MODEL_TO_PARALLEL_PARAMS[args.model]["deepspeed"]
         script = f"""
-conda activate deepspeed;
+conda activate deepspeed-mii;
 set -u https_proxy; set -u http_proxy; set -u all_proxy;
 set -u HTTPS_PROXY; set -u HTTP_PROXY; set -u ALL_PROXY;
 python -m mii.entrypoints.api_server \\
@@ -69,8 +78,8 @@ python -m mii.entrypoints.api_server \\
     elif args.backend == "distserve":
         context_pp, context_tp, decoding_pp, decoding_tp = MODEL_TO_PARALLEL_PARAMS[args.model]["distserve"]
         script = f"""
-conda activate SwiftTransformer;
-python DistServe/distserve/api_server/distserve_api_server.py \\
+conda activate distserve;
+python -m distserve.api_server.distserve_api_server \\
     --host 0.0.0.0 \\
     --port {port} \\
     --model {args.model} \\

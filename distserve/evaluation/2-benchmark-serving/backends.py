@@ -35,7 +35,7 @@ async def _async_request_vllm_like_interface(
                             first_token_time = time.perf_counter()
                         num_tokens += 1
                     complete_time = time.perf_counter()
-                    if abs(num_tokens-request.output_len) > 1:
+                    if abs(num_tokens-request.output_len) > 2:
                         print(f"WARNING: num_tokens ({num_tokens}) != request.output_len ({request.output_len})")
                     # print(data.decode("utf-8").strip("\0"))
                 else:

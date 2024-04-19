@@ -85,6 +85,7 @@ dependencies:
   - networkx=3.1=py310h06a4308_0
   - openssl=3.0.13=h7f8727e_0
   - pip=23.3.1=py310h06a4308_0
+  - psutil=5.9.0=py310h5eee18b_0
   - python=3.10.14=h955ad1f_0
   - pytorch=2.2.2=py3.10_cuda12.1_cudnn8.9.2_0
   - pytorch-cuda=12.1=ha16c6d3_5
@@ -98,7 +99,6 @@ dependencies:
   - tk=8.6.12=h1ccaba5_0
   - torchtriton=2.2.0=py310
   - typing_extensions=4.9.0=py310h06a4308_1
-  - tzdata=2024a=h04d1e81_0
   - wheel=0.41.2=py310h06a4308_0
   - xz=5.4.6=h5eee18b_0
   - yaml=0.2.5=h7b6447c_0
@@ -108,6 +108,7 @@ dependencies:
       - aiohttp-cors==0.7.0
       - aiosignal==1.3.1
       - annotated-types==0.6.0
+      - anyio==4.3.0
       - async-timeout==4.0.3
       - attrs==23.2.0
       - cachetools==5.3.3
@@ -115,6 +116,8 @@ dependencies:
       - click==8.1.7
       - colorful==0.5.6
       - distlib==0.3.8
+      - exceptiongroup==1.2.0
+      - fastapi==0.110.1
       - frozenlist==1.4.1
       - google-api-core==2.18.0
       - google-auth==2.29.0
@@ -130,6 +133,7 @@ dependencies:
       - opencensus==0.11.4
       - opencensus-context==0.1.3
       - packaging==24.0
+      - pandas==2.2.2
       - platformdirs==4.2.0
       - prometheus-client==0.20.0
       - proto-plus==1.23.0
@@ -139,6 +143,8 @@ dependencies:
       - pyasn1-modules==0.4.0
       - pydantic==2.7.0
       - pydantic-core==2.18.1
+      - python-dateutil==2.9.0.post0
+      - pytz==2024.1
       - ray==2.10.0
       - referencing==0.34.0
       - regex==2024.4.16
@@ -148,9 +154,12 @@ dependencies:
       - safetensors==0.4.3
       - six==1.16.0
       - smart-open==7.0.4
+      - starlette==0.37.2
       - tokenizers==0.15.2
       - transformers==4.39.3
+      - tzdata==2024.1
       - urllib3==2.2.1
+      - uvicorn==0.29.0
       - virtualenv==20.25.3
       - wrapt==1.16.0
       - yarl==1.9.4
