@@ -54,7 +54,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Install vLLM
 # Assume that its source code locates at distserve/evaluation/vllm
-COPY distserve/evaluation/vllm /app/vllm
+COPY --exclude=distserve/evaluation/vllm/build distserve/evaluation/vllm /app/vllm
 RUN --mount=type=cache,target=/app/vllm/build \
     eval "$(micromamba shell hook --shell bash)" && \
     micromamba activate vllm && \
@@ -88,9 +88,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     micromamba create -n distserve -f /app/environment.yml
 
 # Set up SwiftTransformer
-# Assume that `SwiftTransformer` is cloned at the same level as `Dockerfile`, and
+# Assume that `SwiftTransformer` is cloned at the same level as the root build dir, and
 # `git submodule update --init --recursive` has been run inside `SwiftTransformer`
-COPY ./SwiftTransformer /app/SwiftTransformer
+COPY --exclude=SwiftTransformer/build SwiftTransformer /app/SwiftTransformer
 RUN --mount=type=cache,target=/app/SwiftTransformer/build \
     eval "$(micromamba shell hook --shell bash)" && \
     micromamba activate distserve && \
@@ -98,14 +98,17 @@ RUN --mount=type=cache,target=/app/SwiftTransformer/build \
     cmake -DTORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0" -DCMAKE_CUDA_ARCHITECTURES="80;86;89;90" -B build && \
     cmake --build build -j $(nproc) && \
     cp build/lib/libst_pybinding.so .
+    
 ENV SWIFT_TRANSFORMER_LIB_PATH="/app/SwiftTransformer/libst_pybinding.so"
+ENV EXP_RESULT_ROOT="/workspace/exp-results"
+ENV RAY_DEDUP_LOGS=0
 
 # Install development software & set up development environment
 # Here we need openssh-server to enable SSH service for runpod
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt/lists \
     apt update && \
-    apt install -y --no-install-recommends nano vim sudo wget fish openssh-server && \
+    apt install -y --no-install-recommends nano vim sudo wget fish openssh-server lsof zip unzip && \
     echo "alias conda=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
     echo "alias mamba=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish
 
@@ -113,6 +116,8 @@ COPY <<EOF /app/startup.sh
 #!/bin/bash
 set -e
 echo "Running the startup script..."
+echo "Exporting env vars..."
+printenv | grep -E '^RUNPOD_|^PATH=|^_=' | awk -F = '{ print "export " \$1 "=\"" \$2 "\"" }' >> /etc/rp_environment
 echo "Setting up SSH..."
 mkdir -p ~/.ssh
 if [[ ! -z \$PUBLIC_KEY ]]; then
@@ -128,7 +133,8 @@ sleep infinity
 EOF
 
 # Install distserve
-COPY --exclude=SwiftTransformer --exclude=distserve/evaluation/DeepSpeed-MII --exclude=distserve/evaluation/vllm . /app/distserve/
+COPY --exclude=distserve/evaluation/vllm --exclude=distserve/evaluation/DeepSpeed-MII --exclude=SwiftTransformer . /app/distserve
+
 RUN eval "$(micromamba shell hook --shell bash)" && \
     micromamba activate distserve && \
     cd /app/distserve && \
