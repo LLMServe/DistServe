@@ -8,8 +8,10 @@
 # Ignore profile database
 profile_database
 
-# Ignore /SwiftTransformer
-/SwiftTransformer
+# Here we do not ignore `SwiftTransformer` since we need its code
+# But we ignore SwiftTransformer/build
+SwiftTransformer/build
+**/cutlass/docs
 
 # Ignore .vscode
 **/.vscode
