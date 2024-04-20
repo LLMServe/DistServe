@@ -7,7 +7,7 @@ from collections import deque
 from typing import Optional, List, Iterable, TYPE_CHECKING, Union, TypedDict
 from uuid import UUID
 
-from simdistserve.timemodule.time_estimator import get_prefill_time, get_decode_time
+from simdistserve.estimators.time_estimator import get_prefill_time, get_decode_time
 
 if TYPE_CHECKING:
     from simdistserve.base.scheduler import Scheduler
