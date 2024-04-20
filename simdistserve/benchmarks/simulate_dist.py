@@ -377,6 +377,7 @@ def test_opt_13b_one_case(
         '--pp-decode', f'{pp_decode}',
         '--tp-prefill', f'{tp_prefill}',
         '--tp-decode', f'{tp_decode}',
+        '--verbose',
     ]
     args = parse_args(args_=args)
     main(args)
