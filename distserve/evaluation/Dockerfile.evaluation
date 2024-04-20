@@ -104,12 +104,15 @@ RUN --mount=type=cache,target=/app/SwiftTransformer/build \
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt/lists \
     apt update && \
-    apt install -y --no-install-recommends nano vim sudo wget fish openssh-server lsof zip unzip && \
+    apt install -y --no-install-recommends nano vim sudo wget fish openssh-server lsof zip unzip btop tree && \
     echo "alias conda=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
     echo "alias mamba=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
     echo 'SWIFT_TRANSFORMER_LIB_PATH="/app/SwiftTransformer/libst_pybinding.so"' >> /etc/environment && \
     echo 'EXP_RESULT_ROOT="/workspace/exp-results"' >> /etc/environment && \
-    echo 'RAY_DEDUP_LOGS=0' >> /etc/environment
+    echo 'RAY_DEDUP_LOGS=0' >> /etc/environment && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba activate distserve && \
+    pip install nvitop matplotlib ipykernel
 
 COPY <<EOF /app/startup.sh
 #!/bin/bash

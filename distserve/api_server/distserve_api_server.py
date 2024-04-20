@@ -66,7 +66,9 @@ async def generate(request: Request) -> Response:
 
         background_tasks = BackgroundTasks()
         # Abort the request if the client disconnects.
-        background_tasks.add_task(abort_request)
+        # Currently we do not support request abortion, so we comment this line.
+        # TODO implement request abortion.
+        # background_tasks.add_task(abort_request)
         return StreamingResponse(stream_results(), background=background_tasks)
     else:
         # Non-streaming case

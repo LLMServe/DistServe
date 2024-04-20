@@ -313,7 +313,6 @@ class ContextStageLLMEngine(SingleStageLLMEngine):
         """
         # pick next batch from scheduler
         batched_requests = self.scheduler.get_next_batch_and_pop()
-        logger.debug(f"Batched requests: {batched_requests}")
         if len(batched_requests) == 0:
             # Two cases may cause len(batched_requests) == 0:
             # 1. No request in the waiting queue
@@ -497,6 +496,8 @@ class DecodingStageLLMEngine(SingleStageLLMEngine):
         """
         Migrate one request from the context engine to the decoding engine
         
+        This function will be called be the decoding stage scheduler
+        
         This function performs the following steps:
         - Allocate blocks on the decoding engine's side
         - Transfer the blocks
@@ -634,7 +635,7 @@ class DecodingStageLLMEngine(SingleStageLLMEngine):
                 self.batches_in_pipeline.pop(0)
                 self.batches_ret_futures.pop(0)
 
-        # proactive
+        # proactive request migraion
         await self.scheduler.post_process()
     
     async def start_event_loop(self):
