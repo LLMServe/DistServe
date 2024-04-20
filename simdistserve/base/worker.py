@@ -105,6 +105,11 @@ class Worker:
     def is_first_in_pipeline(self):
         return self.pipe_rank == 0
 
+    @property
+    def has_back_pressure(self) -> bool:
+        threshold = int(self.decode_max_batch_size * self.decode_back_pressure)
+        return sum(r.current_context_len for r in self.decode_queue) > threshold
+
     def __repr__(self):
         return f"Worker {self.wid}"
 
@@ -124,7 +129,7 @@ class Worker:
             if not (self.prefill_queue or self.decode_queue):
                 yield self._wakeup_event
 
-            if self.prefill_queue:
+            if self.prefill_queue and not self.has_back_pressure:
                 yield from self.do_prefill()
             else:
                 yield from self.do_decode()
@@ -316,7 +321,7 @@ class Worker:
             prefill_bs=len(prefill_items),
             decode_bs=len(decode_reqs),
             prefill_len_list=[x.current_prefill_lens for x in prefill_items],
-            decode_len_list=[x.counter + x.prefill_lens for x in decode_reqs],
+            decode_len_list=[x.current_context_len for x in decode_reqs],
         )
 
         # Get prefill time wrt total number of tokens.
@@ -344,9 +349,9 @@ class Worker:
         batch_size = len(decode_reqs)
         self._log_event(
             "do_decode", num_tokens=batch_size, decode_bs=batch_size,
-            decode_len_list=[x.counter + x.prefill_lens for x in decode_reqs],
+            decode_len_list=[x.current_context_len for x in decode_reqs],
         )
-        _token_generated_list = [x.counter + x.prefill_lens + 1 for x in decode_reqs]
+        _token_generated_list = [x.current_context_len + 1 for x in decode_reqs]
         delay = get_decode_time(batch_size, pp=self.cluster.PP_decode,
                                 model_type=self.model_type, TP=self.TP_Decode,
                                 token_generated_list=_token_generated_list)

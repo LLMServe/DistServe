@@ -62,6 +62,10 @@ class Request:
         # The last worker in the pipeline unset this value at a chunk's end.
         self.chunk_id = None
 
+    @property
+    def current_context_len(self):
+        return self.prefill_lens + max(0, self.counter)
+
     def _log_event(self, event, wid=-1):
         if not self.env:
             raise ValueError("Request.env is not set.")

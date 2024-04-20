@@ -34,7 +34,7 @@ def parse_args(args_=None):
                         help='Backend to simulate (distserve, vllm)')
     parser.add_argument('--model', type=str, default='opt_13b',
                         help='Model type (opt_13b, opt_66b, opt_175b)')
-    parser.add_argument('--seed', type=int, default=None)
+    parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--rate', type=float, default=float("inf"),
                         help='Rate of requests per second')
     parser.add_argument('--N', type=int, default=64, help='Number of requests')
