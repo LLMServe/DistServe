@@ -7,7 +7,7 @@ from collections import deque
 from typing import Optional, List, Iterable, TYPE_CHECKING, Union, TypedDict
 from uuid import UUID
 
-from simdistserve.timemodule.worktime import get_prefill_time, get_decode_time
+from simdistserve.timemodule.time_estimator import get_prefill_time, get_decode_time
 
 if TYPE_CHECKING:
     from simdistserve.base.scheduler import Scheduler
@@ -20,10 +20,13 @@ class WorkerConfig(TypedDict):
     TP_Prefill: int  # Tensor parallelism for prefill (default = 1)
     TP_Decode: int  # Tensor parallelism for decode (default = 1)
     model_type: str  # Model type for prefill/decode time calculation (default = ModelType.opt_13b)
-    prefill_max_batch_size: int  # Maximum number of prefill request batching (default = 1)
-    chunked_prefill_max_tokens: int  # Max tokens in prefill chunk (default = 10**7)
+    prefill_max_batch_size: int  # Maximum number of prefill request in a batch (default = 10**7)
+    decode_max_batch_size: int  # Maximum number of decode request in a batch (default = 10**7)
+    prefill_max_tokens: int  # Max tokens in prefill iteration (default = 10**7)
+    decode_max_tokens: int  # Max tokens in a iteration forward (default = 10**7)
+    enable_chunked_prefill: Optional[bool]  # Enable memory pressure simulation (default = False)
 
-    # TOdO: Deprecated
+    # TODO: Deprecated
     TP: Optional[int]  # Tensor parallelism (default = 1)
     pass
 
@@ -35,13 +38,15 @@ class Worker:
         is_last_in_pipeline: bool = False,
         pipe_rank: int = None,
         should_request_stay: bool = True,
-        prefill_max_batch_size: int = 0,
-        chunked_prefill_max_tokens: int = 10 ** 7,  # assume max tokens are unbounded.
+        prefill_max_batch_size: int = 10 ** 7,
+        decode_max_batch_size: int = 10 ** 7,
         global_scheduler: 'Scheduler' = None,
         model_type: str = None,
         TP: int = 1,
         TP_Prefill: int = None,
         TP_Decode: int = None,
+        enable_chunked_prefill=False,
+        decode_max_tokens=10 ** 7,
     ):
         self.env = env
         self.cluster = cluster  # Refer to the cluster of init.
@@ -73,10 +78,13 @@ class Worker:
         self.global_scheduler = global_scheduler
         self.should_request_stay: bool = should_request_stay
         # Maximum number requests to fill in prefill batch. (Default 0 => 10 ** 7, big enough number)
-        # TODO: (Deprecate) bad naming - should be prefill_max_prefill_requests.
         self.prefill_max_batch_size: int = prefill_max_batch_size if prefill_max_batch_size > 0 else 10 ** 7
+        self.decode_max_batch_size: int = decode_max_batch_size if decode_max_batch_size > 0 else 10 ** 7
         # Maximum number of tokens for a prefill request to batch.
-        self.chunked_prefill_max_tokens: int = chunked_prefill_max_tokens if chunked_prefill_max_tokens > 0 else 10 ** 7
+        self.prefill_max_tokens: int = prefill_max_batch_size if prefill_max_batch_size > 0 else 10 ** 7
+        self.decode_max_tokens: int = decode_max_tokens if decode_max_tokens > 0 else 10 ** 7
+        # Enable chunked prefill (if True) or prioritization scheduling (if False)
+        self.enable_chunked_prefill: bool = enable_chunked_prefill
 
         self.prefill_queue: 'deque[Request]' = deque()
         self.decode_queue: 'deque[Request]' = deque()
@@ -193,6 +201,8 @@ class Worker:
         return
 
     def _enter_decodes(self, remaining_tok_in_batch: int) -> 'List[Request]':
+        # decode_max_tokens
+
         # Acceptable decode requests is capped by the remaining allowed tokens in this batch.
         _decode_len = min(remaining_tok_in_batch, len(self.decode_queue))
         decode_reqs = []
@@ -220,33 +230,41 @@ class Worker:
                 result.append(self.prefill_queue.popleft())
             pass
 
-        # If worker is the first in pipeline, then it will do chunked prefill.
         else:
+            # Worker is the first in pipeline, then it will do chunked prefill.
             chunk_size = 0
-            chunked_prefill_max_tokens = self.chunked_prefill_max_tokens
+            prefill_max_tokens = self.prefill_max_tokens
             # chunk_id assign as uuid
             chunk_id = UUID(int=random.getrandbits(128))
             for _ in range(max_request_size):
-                # TODO: Add the chunked-prefill logic here.
-                # TODO: (Question) Should chunked prefill skip through?
                 candidate: 'Request' = self.prefill_queue[0]
 
-                # The prefill portion that we picked from the candidate.
-                sched_size = min(
-                    # The to-schedule size is the minimum of
-                    # (1) the remaining prefill size of the candidate, and
-                    # (2) the maximum allowed size of a chunked-prefill batch.
-                    # This way we greedily cut and schedule the prefill chunk.
-                    candidate.remain_prefill_lens,
-                    chunked_prefill_max_tokens - chunk_size  # max batch size in a chunked-prefill batch - chunk size
-                )
-                if sched_size <= 0:
-                    break
+                if self.enable_chunked_prefill:
+                    # The prefill portion that we picked from the candidate.
+                    sched_size = min(
+                        # The to-schedule size is the minimum of
+                        # (1) the remaining prefill size of the candidate, and
+                        # (2) the maximum allowed size of a chunked-prefill batch.
+                        # This way we greedily cut and schedule the prefill chunk.
+                        candidate.remain_prefill_lens,
+                        prefill_max_tokens - chunk_size  # max batch size in a chunked-prefill batch - chunk size
+                    )
+                    if sched_size <= 0:
+                        break
+                else:
+                    # If the whole request can fit into the chunk,
+                    # then just schedule the whole request.
+                    sched_size = candidate.remain_prefill_lens
+                    if sched_size > prefill_max_tokens:
+                        break
+                    pass
+
                 # Candidate is picked. Now fill in the chunked-prefill information.
                 candidate.current_prefill_lens = sched_size
                 candidate.remain_prefill_lens -= sched_size
-                chunked_prefill_max_tokens -= sched_size
+                prefill_max_tokens -= sched_size
                 candidate.chunk_id = chunk_id
+                chunk_size += sched_size
                 assert candidate.remain_prefill_lens >= 0
                 result.append(self.prefill_queue.popleft())
                 pass
@@ -289,8 +307,11 @@ class Worker:
 
     def do_prefill(self):
         prefill_items: 'List[Request]' = self._enter_prefill()
-        remaining_tok_in_batch = self.chunked_prefill_max_tokens - sum(x.current_prefill_lens for x in prefill_items)
-        decode_reqs = self._enter_decodes(remaining_tok_in_batch)
+        if self.enable_chunked_prefill:
+            remaining_tok_in_batch = self.prefill_max_tokens - sum(x.current_prefill_lens for x in prefill_items)
+            decode_reqs = self._enter_decodes(remaining_tok_in_batch)
+        else:
+            decode_reqs = []
         # TODO: (Refactor) The `num_tokens` may be used inaccurately in the get prefill time function.
         num_tokens = sum(x.current_prefill_lens for x in prefill_items)
         num_tokens += len(decode_reqs)
@@ -325,7 +346,7 @@ class Worker:
         return
 
     def do_decode(self):
-        decode_reqs = self._enter_decodes(self.chunked_prefill_max_tokens)
+        decode_reqs = self._enter_decodes(self.decode_max_tokens)
         batch_size = len(decode_reqs)
         self._log_event(
             "do_decode", num_tokens=batch_size, decode_bs=batch_size,

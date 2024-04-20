@@ -1,5 +1,5 @@
 from simdistserve.constants import ModelTypes
-from simdistserve.timemodule.worktime import get_prefill_time, get_decode_time
+from simdistserve.timemodule.time_estimator import get_prefill_time, get_decode_time
 
 
 def test_get_prefill_time():

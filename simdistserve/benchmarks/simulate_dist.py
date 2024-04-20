@@ -142,13 +142,29 @@ def main(args):
     # Setting the seed to sample request / process
     requests, arrival = load_workload(workload, N, rate, cv, seed, process)
 
+    # TODO: Get prefill and decode max batch
+    #   - prefill_max_batch_size = get_token_zie...
+    #   - decode_max_tokens = get_token_size...
+
+    if args.backend == 'vllm':
+        prefill_max_tokens = 10 ** 7
+        decode_max_tokens = 10 ** 7
+        pass
+    else:
+        prefill_max_tokens = 10 ** 7
+        decode_max_tokens = 10 ** 7
+        pass
+
     # Run simulation
     env = simpy.Environment()
     worker_config = WorkerConfig(
         model_type=model_type,
         TP=TP_Prefill, TP_Prefill=TP_Prefill, TP_Decode=TP_Prefill,
-        chunked_prefill_max_tokens=0,  # 0 means inf
-        prefill_max_batch_size=0,  # 0 means inf
+        prefill_max_batch_size=10 ** 7,  # inf
+        decode_max_batch_size=10 ** 7,  # inf
+        prefill_max_tokens=prefill_max_tokens,
+        decode_max_tokens=decode_max_tokens,
+        enable_chunked_prefill=False,
     )
     if args.backend == 'vllm':
         cluster = VLLMCluster(
