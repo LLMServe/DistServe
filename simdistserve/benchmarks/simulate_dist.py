@@ -385,11 +385,8 @@ def test_opt_13b_one_case(
     return
 
 
-# if __name__ == '__main__':
-#     args = parse_args()
-#     print(args)
-#     main(args)
-#     pass
-
 if __name__ == '__main__':
-    test_opt_13b_one_case()
+    args = parse_args()
+    print(args)
+    main(args)
+    pass
