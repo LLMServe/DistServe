@@ -23,7 +23,7 @@ MODEL_TO_PARALLEL_PARAMS = {
     "facebook/opt-13b": {
         "vllm": 1,
         "deepspeed": 1,
-        "distserve": (2, 1, 1, 1)
+        "distserve": (2, 1, 1, 1)   # TODO adjust me
     },
     "facebook/opt-66b": {
         "vllm": 4,
@@ -51,13 +51,14 @@ def api_server_starter_routine(
 conda activate vllm;
 python -u -m vllm.entrypoints.api_server \\
     --host 0.0.0.0 --port {port} \\
-    --engine-use-ray --disable-log-requests \\
+    --engine-use-ray --worker-use-ray --disable-log-requests \\
     --model {args.model} --dtype float16 \\
+    --max-paddings 524288 \\
     {"--load-format dummy" if use_dummy_weight else ""} \\
     -tp {tp_world_size} \\
     --block-size 16 --seed 0 \\
     --swap-space 16 \\
-    --gpu-memory-utilization 0.92 \\
+    --gpu-memory-utilization 0.95 \\
     --max-num-batched-tokens 65536 \\
     --max-num-seqs 1024 \\
         """
