@@ -1,3 +1,6 @@
+# Ignore raw dataset
+/distserve/evaluation/dataset/raw
+
 # Ignore nsight profiling output
 *.nsys-rep
 *.sqlite

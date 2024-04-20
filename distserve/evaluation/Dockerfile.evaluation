@@ -98,10 +98,6 @@ RUN --mount=type=cache,target=/app/SwiftTransformer/build \
     cmake -DTORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0" -DCMAKE_CUDA_ARCHITECTURES="80;86;89;90" -B build && \
     cmake --build build -j $(nproc) && \
     cp build/lib/libst_pybinding.so .
-    
-ENV SWIFT_TRANSFORMER_LIB_PATH="/app/SwiftTransformer/libst_pybinding.so"
-ENV EXP_RESULT_ROOT="/workspace/exp-results"
-ENV RAY_DEDUP_LOGS=0
 
 # Install development software & set up development environment
 # Here we need openssh-server to enable SSH service for runpod
@@ -110,14 +106,15 @@ RUN --mount=type=cache,target=/var/cache/apt \
     apt update && \
     apt install -y --no-install-recommends nano vim sudo wget fish openssh-server lsof zip unzip && \
     echo "alias conda=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
-    echo "alias mamba=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish
+    echo "alias mamba=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
+    echo 'SWIFT_TRANSFORMER_LIB_PATH="/app/SwiftTransformer/libst_pybinding.so"' >> /etc/environment && \
+    echo 'EXP_RESULT_ROOT="/workspace/exp-results"' >> /etc/environment && \
+    echo 'RAY_DEDUP_LOGS=0' >> /etc/environment
 
 COPY <<EOF /app/startup.sh
 #!/bin/bash
 set -e
 echo "Running the startup script..."
-echo "Exporting env vars..."
-printenv | grep -E '^RUNPOD_|^PATH=|^_=' | awk -F = '{ print "export " \$1 "=\"" \$2 "\"" }' >> /etc/rp_environment
 echo "Setting up SSH..."
 mkdir -p ~/.ssh
 if [[ ! -z \$PUBLIC_KEY ]]; then
@@ -134,10 +131,12 @@ EOF
 
 # Install distserve
 COPY --exclude=distserve/evaluation/vllm --exclude=distserve/evaluation/DeepSpeed-MII --exclude=SwiftTransformer . /app/distserve
-
 RUN eval "$(micromamba shell hook --shell bash)" && \
     micromamba activate distserve && \
     cd /app/distserve && \
     pip install -e .
+
+# Copy dataset
+COPY --exclude=distserve/evaluation/dataset/raw distserve/evaluation/dataset /app/dataset
 
 CMD ["bash", "/app/startup.sh"]
