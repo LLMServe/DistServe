@@ -24,7 +24,7 @@ from simdistserve.base.workload import (
 )
 from simdistserve.clusters.disagg import DisaggCluster
 from simdistserve.clusters.vllm import VLLMCluster
-from simdistserve.timemodule.worktime import ModelTypes
+from simdistserve.constants import ModelTypes
 
 
 def parse_args(args_=None):

@@ -56,7 +56,6 @@ class Scheduler:
     pass
 
 
-# TODO: (Deprecate)
 def put_request(env, scheduler: 'Scheduler', delays, requests):
     for r, delay in zip(requests, delays):
         r.init()
