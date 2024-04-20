@@ -5,10 +5,10 @@ class ModelTypes:
 
     @staticmethod
     def formalize_model_name(x):
-        if x == 'opt13b':
-            return ModelTypes.opt_13b
-        if x == 'opt66b':
-            return ModelTypes.opt_66b
-        if x == 'opt175b':
-            return ModelTypes.opt_175b
+        if x == ModelTypes.opt_13b:
+            return 'facebook/opt-13b'
+        if x == ModelTypes.opt_66b:
+            return 'facebook/opt-66b'
+        if x == ModelTypes.opt_175b:
+            return 'facebook/opt-175b'
         raise ValueError(x)
