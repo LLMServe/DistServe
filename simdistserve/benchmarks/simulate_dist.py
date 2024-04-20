@@ -69,6 +69,8 @@ def parse_args(args_=None):
                         help='Target latency for prefill')
     parser.add_argument('--decode-containment', type=int, default=None,
                         help='Containment target for decode')
+    parser.add_argument('--slas', type=str, default='[85, 90, 95, 98, 99]',
+                        help='Fix attainment and get the target.'),
     parser.add_argument('--slo-scales', type=str, default='[1.0, 0.4, 0.6, 0.8, 1.2]',
                         help='SLO scales in a python list.'),
     parser.add_argument('--decode-target', type=int, default=100,
@@ -81,7 +83,9 @@ def parse_args(args_=None):
     assert args.backend in ['distserve', 'vllm'], f'Unknown backend: {args.backend}'
     assert args.arrival in ['poisson', 'gamma', 'fixed', 'custom'], f'Unknown arrival process: {args.arrival}'
     args.slo_scales = eval(args.slo_scales)
+    args.slas = eval(args.slas)
     assert isinstance(args.slo_scales, list)
+    assert isinstance(args.slas, list)
     return args
 
 
@@ -224,7 +228,7 @@ def main(args):
 
     # Fix the attainment (percentage of requests that meet the SLO),
     # then find the prefill /  decode SLO target that it can meet.
-    slas = [85, 90, 95, 98, 99]
+    slas = args.slas
     for sla in slas:
         prefill_attainment = decode_attainment = sla
         prefill_target = per_request_latency_df['first_token_latency'].quantile(prefill_attainment / 100)
