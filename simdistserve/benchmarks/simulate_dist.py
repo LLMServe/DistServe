@@ -91,8 +91,8 @@ def check_dataset_existence(x):
 
 
 def load_workload(workload, N, rate, cv, seed):
-    random.seed(args.seed)
-    np.random.seed(args.seed)
+    random.seed(seed)
+    np.random.seed(seed)
     if workload in ['sharegpt', 'longbench', 'humaneval']:
         dataset_root = Path(__file__).parent
         dataset_file = dataset_root / "data" / f"{workload}.dataset"
@@ -269,7 +269,7 @@ def main(args):
     return is_prefill_contained, is_decode_contained, df
 
 
-def test_opt_13b_example():
+def test_opt_13b_grid_search_serial():
     arg_lists = [
         [
             '--arrival', 'poisson',
@@ -345,8 +345,41 @@ def test_opt_13b_example():
     print(f"Best Config: {best_config} with goodput {best_goodput}")
 
 
-if __name__ == '__main__':
-    args = parse_args()
-    print(args)
+def test_opt_13b_one_case(
+    rate=1, tp_prefill=1, pp_prefill=1, tp_decode=1, pp_decode=1,
+    backend='vllm',
+):
+    args = [
+        '--arrival', 'poisson',
+        '--seed', '0',
+        '--N', '1000',
+        '--backend', backend,
+        '--prefill-containment', '90',  # P90
+        '--prefill-target', '200',  # ms
+        '--decode-containment', '90',  # P90
+        '--decode-target', '100',  # ms
+        '--model', 'opt_13b',
+        '--workload', 'sharegpt',
+        '--rate', f'{rate}',
+        '--output',
+        f'logs/request.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
+        # '--output-worker',
+        # f'raw_results/worker.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
+        '--pp-prefill', f'{pp_prefill}',
+        '--pp-decode', f'{pp_decode}',
+        '--tp-prefill', f'{tp_prefill}',
+        '--tp-decode', f'{tp_decode}',
+    ]
+    args = parse_args(args_=args)
     main(args)
-    pass
+    return
+
+
+# if __name__ == '__main__':
+#     args = parse_args()
+#     print(args)
+#     main(args)
+#     pass
+
+if __name__ == '__main__':
+    test_opt_13b_one_case()
