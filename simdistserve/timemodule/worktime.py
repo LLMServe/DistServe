@@ -19,7 +19,7 @@ def get_prefill_time(num_tokens=None, pp=1, bs=1, decode_bs=0, model_type=ModelT
                      prefill_len_list=None, **kw):
     a, b, c = profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]["prefill"]
     pp_factor = 1 / pp
-    pp_const = 2 * pp  # TODO: Modulate the PP overhead
+    pp_const = 1 * pp  # TODO: Modulate the PP overhead
     num_total_tokens = sum(prefill_len_list)
     sum_num_tokens_sqr = sum([x ** 2 for x in prefill_len_list])
     delay = a + b * num_total_tokens + c * sum_num_tokens_sqr
@@ -30,7 +30,7 @@ def get_prefill_time(num_tokens=None, pp=1, bs=1, decode_bs=0, model_type=ModelT
 def get_decode_time(num_requests, pp=1, model_type=ModelTypes.opt_13b, TP=1, token_generated_list=None, **kw):
     a, b, c = profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]["decode"]
     pp_factor = 1 / pp
-    pp_const = 2 * pp  # TODO: Modulate the PP overhead
+    pp_const = 1 * pp  # TODO: Modulate the PP overhead
     num_total_tokens = sum(token_generated_list)
     batch_size = num_requests
     delay = a + b * num_total_tokens + c * batch_size
