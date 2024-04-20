@@ -16,7 +16,8 @@ example_testing_params = [
             model_dir = "facebook/opt-13b",
             tp_world_size = 1,
             max_req_num = 1024,
-            max_seq_len = 2048
+            max_seq_len = 2048,
+            use_dummy_weights = True
         ),
         input_params = [
             InputParam(
@@ -34,8 +35,9 @@ def get_profiling_params() -> list[TestParamGroup]:
             worker_param = WorkerParam(
                 model_dir = model,
                 tp_world_size = tp_world_size,
-                max_req_num = 1024,
-                max_seq_len = 2048
+                max_req_num = 256,
+                max_seq_len = 2048,
+                use_dummy_weights = True
             ),
             input_params = [
                 InputParam(
@@ -45,14 +47,19 @@ def get_profiling_params() -> list[TestParamGroup]:
                 )
                 for (batch_size, input_len) in [
                     (batch_size, input_len)
-                    for batch_size in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
+                    for batch_size in [1, 2, 4, 8, 16, 32, 64, 128, 192]
                     for input_len in [4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 284, 512, 768, 1024, 1536, 2020]
-                    if batch_size*math.ceil((input_len+16)/16)*16 <= 16384
+                    if batch_size * ((input_len+15)//16*16) <= num_tokens_limit
                 ]
             ]
         )
-        for (model, tp_world_size) in [
-            ("facebook/opt-6.7b", 1),
+        for (model, tp_world_size, num_tokens_limit) in [
+            ("facebook/opt-13b", 1, 49152),
+            ("facebook/opt-13b", 2, 98304),
+            ("facebook/opt-13b", 4, 25000),
+            ("facebook/opt-66b", 2, 8192),
+            ("facebook/opt-66b", 3, 36864),
+            ("facebook/opt-66b", 4, 65000),
         ]
     ]
 def run_distserve(test_params: list[TestParamGroup], **kwargs):

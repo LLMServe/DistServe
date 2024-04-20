@@ -97,6 +97,7 @@ class DistServeSUT(SystemUnderTest):
             model = worker_param.model_dir,
             tokenizer = worker_param.model_dir,
             dtype = "fp16",
+            use_dummy_weights = worker_param.use_dummy_weights
         )
         self.cache_config = CacheConfig(
             block_size = BLOCK_SIZE,
