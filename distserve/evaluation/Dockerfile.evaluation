@@ -132,14 +132,14 @@ echo "Start script finished, pod is ready to use."
 sleep infinity
 EOF
 
+# Copy dataset
+COPY --exclude=distserve/evaluation/dataset/raw distserve/evaluation/dataset /app/dataset
+
 # Install distserve
 COPY --exclude=distserve/evaluation/vllm --exclude=distserve/evaluation/DeepSpeed-MII --exclude=SwiftTransformer . /app/distserve
 RUN eval "$(micromamba shell hook --shell bash)" && \
     micromamba activate distserve && \
     cd /app/distserve && \
     pip install -e .
-
-# Copy dataset
-COPY --exclude=distserve/evaluation/dataset/raw distserve/evaluation/dataset /app/dataset
 
 CMD ["bash", "/app/startup.sh"]
