@@ -3,9 +3,9 @@ import copy
 from typing import List, Optional, Tuple, Dict, AsyncGenerator
 import asyncio
 import math
+import argparse
 
 import ray
-import torch
 from ray.util.placement_group import PlacementGroup
 
 from distserve.config import (
@@ -30,6 +30,7 @@ from distserve.single_stage_engine import (
     DecodingStageLLMEngine
 )
 from distserve.lifetime import LifetimeEvent, LifetimeEventType
+from distserve.simulator.config import SimulatorConfig
 
 logger = init_logger(__name__)
 
@@ -88,13 +89,15 @@ class LLMEngine:
         disagg_parallel_config: DisaggParallelConfig,
         cache_config: CacheConfig,
         context_sched_config: ContextStageSchedConfig,
-        decoding_sched_config: DecodingStageSchedConfig
+        decoding_sched_config: DecodingStageSchedConfig,
+        simulator_config: SimulatorConfig
     ):
         self.model_config = model_config
         self.disagg_parallel_config = disagg_parallel_config
         self.cache_config = cache_config
         self.context_sched_config = context_sched_config
         self.decoding_sched_config = decoding_sched_config
+        self.simulator_config = simulator_config
 
         self.request_counter = Counter()
         self.tokenizer = get_tokenizer(
@@ -106,7 +109,7 @@ class LLMEngine:
         self.bridge_queue = asyncio.Queue()
         
         logger.info("Initializing placement group")
-        self.layer_per_placement_group, self.placement_groups = self._init_placement_groups()
+        placement_groups = self._init_placement_groups()
         
         logger.info("Initializing context stage LLM engine")
         self.context_engine = ContextStageLLMEngine(
@@ -115,7 +118,8 @@ class LLMEngine:
             disagg_parallel_config.context,
             cache_config,
             context_sched_config,
-            self.placement_groups,
+            simulator_config,
+            placement_groups,
             self._on_new_step_output_callback,
             self._on_new_lifetime_event_callback
         )
@@ -127,7 +131,8 @@ class LLMEngine:
             disagg_parallel_config.decoding,
             cache_config,
             decoding_sched_config,
-            self.placement_groups,
+            simulator_config,
+            placement_groups,
             self.context_engine.clear_migrated_blocks_callback,
             self._on_new_step_output_callback,
             self._on_new_lifetime_event_callback
@@ -165,13 +170,16 @@ class LLMEngine:
             return
         self.request_lifetime_events[request_id].append(event)
     
-    def _init_placement_groups(self) -> Tuple[int, List[PlacementGroup]]:
+    def _init_placement_groups(self) -> Optional[List[PlacementGroup]]:
         """
         Create placement groups for all engines and all workers
         
         Currently we force the same layer of the context & decoding stage to be executed
         on the same node (we call this "aligned"). This simplifies k/v cache migration.
         """
+        if self.simulator_config.is_simulator_mode:
+            return None
+        
         context_pp = self.disagg_parallel_config.context.pipeline_parallel_size
         context_tp = self.disagg_parallel_config.context.tensor_parallel_size
         decoding_pp = self.disagg_parallel_config.decoding.pipeline_parallel_size
@@ -202,14 +210,14 @@ class LLMEngine:
             ray.get(placement_group.ready(), timeout=1000)
             placement_groups.append(placement_group)
         
-        return layer_per_placement_group, placement_groups
+        return placement_groups
         
     async def initialize(self):
         await asyncio.gather(
             self.context_engine.initialize(),
             self.decoding_engine.initialize()
         )
-        self.decoding_engine.register_kvcache_mem_handles(
+        await self.decoding_engine.register_kvcache_mem_handles(
             self.context_engine.parallel_config,
             self.context_engine.kv_cache_mem_handles
         )
@@ -303,3 +311,37 @@ class LLMEngine:
         self.context_engine.abort_request(request_id)
         self.decoding_engine.abort_request(request_id)
         
+def add_engine_cli_args(parser: argparse.ArgumentParser):
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--tokenizer", type=str, default=None)
+    parser.add_argument("--trust-remote-code", action="store_true")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--use-dummy-weights", action="store_true")
+    
+    parser.add_argument("--context-pipeline-parallel-size", type=int, default=1)
+    parser.add_argument("--context-tensor-parallel-size", type=int, default=1)
+    parser.add_argument("--decoding-pipeline-parallel-size", type=int, default=1)
+    parser.add_argument("--decoding-tensor-parallel-size", type=int, default=1)
+    
+    parser.add_argument("--block-size", type=int, default=16)
+    parser.add_argument("--max-num-blocks-per-req", type=int, default=256)
+    parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
+    parser.add_argument("--swap-space", type=int, default=1)
+    
+    parser.add_argument("--context-sched-policy", type=str, default="fcfs")
+    parser.add_argument("--context-max-batch-size", type=int, default=256)
+    parser.add_argument("--context-max-tokens-per-batch", type=int, default=4096)
+    
+    parser.add_argument("--decoding-sched-policy", type=str, default="fcfs")
+    parser.add_argument("--decoding-max-batch-size", type=int, default=256)
+    parser.add_argument("--decoding-max-tokens-per-batch", type=int, default=8192)
+    parser.add_argument("--decoding-profiling-file", type=str, default=None)
+    parser.add_argument("--decoding-proactive-offloading", action="store_true")
+    parser.add_argument("--decoding-num-min-free-blocks-threshold", type=int, default=0)
+    parser.add_argument("--decoding-num-queues-for-prediction", type=int, default=2)
+    parser.add_argument("--decoding-use-skip-join", action="store_true")
+    
+    parser.add_argument("--simulator-mode", action="store_true")
+    parser.add_argument("--profiler-data-path", type=str, default=None)
+    parser.add_argument("--gpu-mem-size-gb", type=float, default=None)
+    

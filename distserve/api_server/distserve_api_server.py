@@ -11,9 +11,11 @@ from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 import uvicorn
 
+import distserve
+import distserve.engine
 from distserve.llm import AsyncLLM
 from distserve.request import SamplingParams
-from distserve.utils import random_uuid
+from distserve.utils import random_uuid, set_random_seed
 from distserve.logger import init_logger
 from distserve.single_stage_engine import StepOutput
 from distserve.config import (
@@ -95,81 +97,13 @@ if __name__ == "__main__":
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--port", type=int, default=8000)
     
-    parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--tokenizer", type=str, default=None)
-    parser.add_argument("--trust-remote-code", action="store_true")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--use-dummy-weights", action="store_true")
-    
-    parser.add_argument("--context-pipeline-parallel-size", type=int, default=1)
-    parser.add_argument("--context-tensor-parallel-size", type=int, default=1)
-    parser.add_argument("--decoding-pipeline-parallel-size", type=int, default=1)
-    parser.add_argument("--decoding-tensor-parallel-size", type=int, default=1)
-    
-    parser.add_argument("--block-size", type=int, default=16)
-    parser.add_argument("--max-num-blocks-per-req", type=int, default=256)
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
-    parser.add_argument("--swap-space", type=int, default=1)
-    
-    parser.add_argument("--context-sched-policy", type=str, default="fcfs")
-    parser.add_argument("--context-max-batch-size", type=int, default=256)
-    parser.add_argument("--context-max-tokens-per-batch", type=int, default=4096)
-    
-    parser.add_argument("--decoding-sched-policy", type=str, default="fcfs")
-    parser.add_argument("--decoding-max-batch-size", type=int, default=256)
-    parser.add_argument("--decoding-max-tokens-per-batch", type=int, default=8192)
-    parser.add_argument("--decoding-profiling-file", type=str, default=None)
-    parser.add_argument("--decoding-proactive-offloading", action="store_true")
-    parser.add_argument("--decoding-num-min-free-blocks-threshold", type=int, default=0)
-    parser.add_argument("--decoding-num-queues-for-prediction", type=int, default=2)
-    parser.add_argument("--decoding-use-skip-join", action="store_true")
-    
+    distserve.engine.add_engine_cli_args(parser)
     args = parser.parse_args()
     
+    set_random_seed(args.seed)
     ray.init()
-
-    engine = AsyncLLM(
-        model_config=ModelConfig(
-            model=args.model,
-            tokenizer=args.tokenizer,
-            trust_remote_code=args.trust_remote_code,
-            seed=args.seed,
-            use_dummy_weights=args.use_dummy_weights
-        ),
-        disagg_parallel_config=DisaggParallelConfig(
-            context=ParallelConfig(
-                tensor_parallel_size=args.context_tensor_parallel_size,
-                pipeline_parallel_size=args.context_pipeline_parallel_size
-            ),
-            decoding=ParallelConfig(
-                tensor_parallel_size=args.decoding_tensor_parallel_size,
-                pipeline_parallel_size=args.decoding_pipeline_parallel_size
-            )
-        ),
-        cache_config=CacheConfig(
-            block_size=args.block_size,
-            max_num_blocks_per_req=args.max_num_blocks_per_req,
-            gpu_memory_utilization=args.gpu_memory_utilization,
-            cpu_swap_space=args.swap_space
-        ),
-        context_sched_config=ContextStageSchedConfig(
-            policy=args.context_sched_policy,
-            max_batch_size=args.context_max_batch_size,
-            max_tokens_per_batch=args.context_max_tokens_per_batch
-        ),
-        decoding_sched_config=DecodingStageSchedConfig(
-            policy=args.decoding_sched_policy,
-            max_batch_size=args.decoding_max_batch_size,
-            max_tokens_per_batch=args.decoding_max_tokens_per_batch,
-            profiling_file=args.decoding_profiling_file,
-            model_name=args.model,
-            proactive_offloading=args.decoding_proactive_offloading,
-            num_min_free_blocks_threshold=args.decoding_num_min_free_blocks_threshold,
-            num_queues_for_prediction=args.decoding_num_queues_for_prediction,
-            use_skip_join=args.decoding_use_skip_join,
-            waiting_block_prop_threshold=0.05
-        )
-    )
+    
+    engine = AsyncLLM.from_engine_args(args)
 
     uvicorn_config = uvicorn.Config(
         app,

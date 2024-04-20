@@ -197,7 +197,7 @@ class ParaWorker:
         input_tokens_batched,
         first_token_indexes,
         block_table,
-    ) -> Tuple[Optional[List[int]], int]:
+    ) -> List[int]:
         """Run one step of inference on the batch of requests."""
 
         start = time.time()

@@ -2,7 +2,7 @@ import math
 import numpy as np
 import dataclasses
 
-from structs import TestRequest, Dataset, ReqResult
+from distserve.simulator.utils import TestRequest, Dataset, ReqResult
 
 @dataclasses.dataclass
 class BenchmarkMetrics:

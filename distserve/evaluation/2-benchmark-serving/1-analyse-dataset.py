@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 import histoprint
 
-from structs import Dataset
+from distserve.simulator.utils import Dataset
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

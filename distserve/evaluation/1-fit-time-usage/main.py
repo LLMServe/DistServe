@@ -25,6 +25,7 @@ the goal of minimizing \sum relative_error^2.
 import math
 import dataclasses
 from typing import Callable
+import json
 
 import numpy as np
 import csv
@@ -114,13 +115,13 @@ def main(args: argparse.Namespace):
         if (dp.model, dp.tp_world_size) not in models_and_tp_sizes:
             models_and_tp_sizes.append((dp.model, dp.tp_world_size))
     
+    result = {}
     for (model, tp_world_size) in models_and_tp_sizes:
         print(f"Fitting model {model} with tp_world_size {tp_world_size} (Prefill stage)")
         cur_data_points = [
             dp
             for dp in data_points
             if dp.model == model and dp.tp_world_size == tp_world_size
-            if dp.prefill_time > 25 # Prune cpu-bound data points
         ]
         prefill_abc = fit_one_abc(
             cur_data_points,
@@ -145,10 +146,20 @@ def main(args: argparse.Namespace):
             lambda dp: dp.decoding_time**0.1
         )
         print(decoding_abc)
+        
+        if model not in result:
+            result[model] = {}
+        result[model][tp_world_size] = {
+            "prefill": prefill_abc.tolist(),
+            "decoding": decoding_abc.tolist()
+        }
+    
+    with open(output_path, "w") as f:
+        f.write(json.dumps(result, indent=4))
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", type=str, required=True, help="Path to the input sqlite database")
-    parser.add_argument("-o", "--output", type=str, required=True, help="Path to the output csv file")
+    parser.add_argument("-o", "--output", type=str, required=True, help="Path to the output json file")
     args = parser.parse_args()
     main(args)

@@ -24,7 +24,7 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     
-from structs import TestRequest, Dataset, ReqResult, dump_req_result_list
+from distserve.simulator.utils import TestRequest, Dataset, ReqResult, dump_req_result_list
 from metrics import BenchmarkMetrics
 import backends
 

@@ -10,7 +10,7 @@ from typing import Optional
 import aiohttp
 from tqdm.asyncio import tqdm
 
-from structs import TestRequest, ReqResult
+from distserve.simulator.utils import TestRequest, ReqResult
 
 AIOHTTP_TIMEOUT = aiohttp.ClientTimeout(total=6 * 60 * 60)
 

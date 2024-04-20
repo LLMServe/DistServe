@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from transformers import PreTrainedTokenizerBase, AutoTokenizer
 
-from structs import TestRequest, Dataset
+from distserve.simulator.utils import TestRequest, Dataset
 
 def read_dataset(
     dataset_path: str,
