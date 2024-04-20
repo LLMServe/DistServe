@@ -25,6 +25,7 @@ from simdistserve.base.workload import (
 from simdistserve.clusters.disagg import DisaggCluster
 from simdistserve.clusters.vllm import VLLMCluster
 from simdistserve.constants import ModelTypes
+from simdistserve.estimators.memory_estimator import get_max_num_tokens
 
 
 def parse_args(args_=None):
@@ -127,33 +128,23 @@ def main(args):
     model_type = ModelTypes.model_str_to_object(args.model)
     process = args.arrival
 
-    PP_prefill = args.pp_prefill
-    PP_decode = args.pp_decode
     TP_Prefill = args.tp_prefill
+    PP_prefill = args.pp_prefill
     TP_Decode = args.tp_decode
+    PP_decode = args.pp_decode
+    prefill_max_tokens = get_max_num_tokens(model_type, TP_Prefill, PP_prefill)
+    decode_max_tokens = get_max_num_tokens(model_type, TP_Decode, PP_decode)
 
     #
     # Handle vllm in data processing
     #
     if args.backend == 'vllm':
         TP_Decode = PP_decode = 0
+        decode_max_tokens = prefill_max_tokens
         pass
 
     # Setting the seed to sample request / process
     requests, arrival = load_workload(workload, N, rate, cv, seed, process)
-
-    # TODO: Get prefill and decode max batch
-    #   - prefill_max_batch_size = get_token_zie...
-    #   - decode_max_tokens = get_token_size...
-
-    if args.backend == 'vllm':
-        prefill_max_tokens = 10 ** 7
-        decode_max_tokens = 10 ** 7
-        pass
-    else:
-        prefill_max_tokens = 10 ** 7
-        decode_max_tokens = 10 ** 7
-        pass
 
     # Run simulation
     env = simpy.Environment()
