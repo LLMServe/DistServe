@@ -12,7 +12,7 @@ def test_get_prefill_time():
             model_type=ModelTypes.opt_13b,
             prefill_len_list=batch,
         )
-        print(f"{bs},{a:.2f},")
+        print(f"{bs},{a:.2f}")
     pass
 
 
@@ -24,7 +24,7 @@ def test_get_decode_time():
             bs, pp=1, TP=1,
             token_generated_list=batch,
         )
-        print(f"{bs},{a:.2f},")
+        print(f"{bs},{a:.2f}")
     pass
 
 
