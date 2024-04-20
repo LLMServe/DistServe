@@ -90,16 +90,16 @@ def check_dataset_existence(x):
     return
 
 
-def load_workload(workload, N, rate, cv, seed):
+def load_workload(workload, N, rate, cv, seed, process: Literal["fixed", "gamma"]):
     random.seed(seed)
     np.random.seed(seed)
     if workload in ['sharegpt', 'longbench', 'humaneval']:
-        dataset_root = Path(__file__).parent
+        dataset_root = Path(__file__).parent.parent
         dataset_file = dataset_root / "data" / f"{workload}.dataset"
         check_dataset_existence(dataset_file)
         requests = sample_requests(dataset_file, N)
 
-        if args.arrival == 'fixed':
+        if process == 'fixed':
             delay = 1 / rate * 1000  # ms
             arrival = get_fixed_interarrival(N, delay)
         else:
@@ -125,6 +125,7 @@ def main(args):
     seed = args.seed
     workload: Union[Literal["sharegpt", "longbench", "humaneval"], str] = args.workload
     model_type = ModelTypes.model_str_to_object(args.model)
+    process = args.arrival
 
     PP_prefill = args.pp_prefill
     PP_decode = args.pp_decode
@@ -139,7 +140,7 @@ def main(args):
         pass
 
     # Setting the seed to sample request / process
-    requests, arrival = load_workload(workload, N, rate, cv, seed)
+    requests, arrival = load_workload(workload, N, rate, cv, seed, process)
 
     # Run simulation
     env = simpy.Environment()
