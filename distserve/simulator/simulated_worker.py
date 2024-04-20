@@ -127,9 +127,10 @@ class SimulatedWorker:
             )
         else:
             estimated_time = self.estimator.estimate_decoding_time_ms(
-                sum([len(tokens) for tokens in input_tokens_batched]),
+                sum([num_previous_tokens for num_previous_tokens in first_token_indexes]),
                 batch_size
             )
+        estimated_time += 1 # add 1ms for Ray's overhead
         await asyncio.sleep(estimated_time / 1000.0)
 
         return generated_tokens_ids
