@@ -131,6 +131,13 @@ def main(args):
     TP_Prefill = args.tp_prefill
     TP_Decode = args.tp_decode
 
+    #
+    # Handle vllm in data processing
+    #
+    if args.backend == 'vllm':
+        TP_Decode = PP_decode = 0
+        pass
+
     # Setting the seed to sample request / process
     requests, arrival = load_workload(workload, N, rate, cv, seed)
 
@@ -156,12 +163,6 @@ def main(args):
     cluster.run()
     put_requests_with_interarrivals(env, cluster.scheduler, arrival, requests)
     env.run()
-
-    #
-    # Handle vllm in data processing
-    #
-    if args.backend == 'vllm':
-        TP_Decode = PP_decode = 0
 
     #
     # Collect request-level data and containment
@@ -211,7 +212,6 @@ def main(args):
         item = [args.backend, model_type, 'both', rate, (prefill_target, decode_target), both_attainment,
                 TP_Prefill, PP_prefill, TP_Decode, PP_decode]
         output_results.append(item)
-
         pass
 
     # Fix the attainment (percentage of requests that meet the SLO),
