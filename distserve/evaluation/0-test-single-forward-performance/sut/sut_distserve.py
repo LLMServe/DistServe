@@ -91,7 +91,6 @@ class DistServeSUT(SystemUnderTest):
         worker_param: WorkerParam,
         input_params: list[InputParam]
     ):
-        assert worker_param.tp_world_size == 1, "DistServeSUT does not support tensor parallelism"
         self.worker_param = worker_param
         
         self.model_config = ModelConfig(

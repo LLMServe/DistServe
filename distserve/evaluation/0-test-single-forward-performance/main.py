@@ -13,7 +13,7 @@ from run_test_params import run_test_params
 example_testing_params = [
     TestParamGroup(
         worker_param = WorkerParam(
-            model_dir = "facebook/opt-6.7b",
+            model_dir = "facebook/opt-13b",
             tp_world_size = 1,
             max_req_num = 1024,
             max_seq_len = 2048
