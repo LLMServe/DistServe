@@ -357,6 +357,7 @@ def test_opt_13b_one_case(
     rate=1, tp_prefill=1, pp_prefill=1, tp_decode=1, pp_decode=1,
     backend='vllm',
 ):
+    suffix = f"opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv"
     args = [
         '--arrival', 'poisson',
         '--seed', '0',
@@ -369,10 +370,10 @@ def test_opt_13b_one_case(
         '--model', 'opt_13b',
         '--workload', 'sharegpt',
         '--rate', f'{rate}',
-        '--output',
-        f'logs/request.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
-        # '--output-worker',
-        # f'raw_results/worker.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
+        '--output', f'logs/request.{suffix}',
+        '--output-request-event', f'logs/request-event.{suffix}',
+        '--output-request-latency', f'logs/request-latency.{suffix}',
+        '--output-worker', f'logs/worker.{suffix}',
         '--pp-prefill', f'{pp_prefill}',
         '--pp-decode', f'{pp_decode}',
         '--tp-prefill', f'{tp_prefill}',
