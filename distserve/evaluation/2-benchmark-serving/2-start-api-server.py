@@ -18,7 +18,7 @@ MODEL_TO_PARALLEL_PARAMS = {
     "facebook/opt-6.7b": {
         "vllm": 1,
         "deepspeed": 1,
-        "distserve": (1, 1, 1, 1)   # (context_pp, context_tp, decoding_pp, decoding_tp)
+        "distserve": (1, 1, 1, 1)   # (context_tp, context_pp, decoding_tp, decoding_pp)
     },
     "facebook/opt-13b": {
         "vllm": 1,
@@ -79,7 +79,7 @@ python -m mii.entrypoints.api_server \\
     
 
     elif args.backend == "distserve":
-        context_pp, context_tp, decoding_pp, decoding_tp = MODEL_TO_PARALLEL_PARAMS[args.model]["distserve"]
+        context_tp, context_pp, decoding_tp, decoding_pp = MODEL_TO_PARALLEL_PARAMS[args.model]["distserve"]
         script = f"""
 conda activate distserve;
 python -m distserve.api_server.distserve_api_server \\
@@ -96,7 +96,7 @@ python -m distserve.api_server.distserve_api_server \\
     \\
     --block-size 16 \\
     --max-num-blocks-per-req 128 \\
-    --gpu-memory-utilization 0.92 \\
+    --gpu-memory-utilization 0.95 \\
     --swap-space 16 \\
     \\
     --context-sched-policy fcfs \\
