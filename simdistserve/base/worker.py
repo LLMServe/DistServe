@@ -48,6 +48,7 @@ class Worker:
         enable_chunked_prefill=False,
         prefill_max_tokens=10 ** 7,
         decode_max_tokens=10 ** 7,
+        decode_back_pressure: float = 0.9,
     ):
         self.env = env
         self.cluster = cluster  # Refer to the cluster of init.
@@ -86,6 +87,8 @@ class Worker:
         self.decode_max_tokens: int = decode_max_tokens if decode_max_tokens > 0 else 10 ** 7
         # Enable chunked prefill (if True) or prioritization scheduling (if False)
         self.enable_chunked_prefill: bool = enable_chunked_prefill
+        # Decode worker stop accepting incoming request when this is full.
+        self.decode_back_pressure = decode_back_pressure
 
         self.prefill_queue: 'deque[Request]' = deque()
         self.decode_queue: 'deque[Request]' = deque()
@@ -111,7 +114,9 @@ class Worker:
             prefill_len_list = []
         if decode_len_list is None:
             decode_len_list = []
-        self.log.append((self.env.now, event, num_tokens, prefill_bs, decode_bs, prefill_len_list, decode_len_list))
+        item = (self.env.now, event, num_tokens, prefill_bs, decode_bs, prefill_len_list, decode_len_list)
+        self.log.append(item)
+        # print(item)
         return
 
     def run(self):
@@ -190,13 +195,6 @@ class Worker:
             self.next_worker.wakeup()
             return
 
-        # TODO: This is an edge case where the perfill (in disaggregate)
-        #  will need to forward to the global scheduler.
-        #  The design is anti-pattern (since the GPU can directly see the global scheduler).
-        #  The better design is to have `instance` level scheduling - such that each time a work is done,
-        #  it will forward to the local instance scheduler, were it decides where to forward.
-        #  The problem is it increases the workload for `env` (a significant overhead),
-        #  so we do this hack instead as an early optimization.
         for item in items:
             self.global_scheduler.schedule_decode(item)
         return
@@ -275,9 +273,6 @@ class Worker:
         return result
 
     def _exit_prefill(self, prefill_items: List['Request']):
-
-        # TODO: Probably good to let the scheduler know the scheduling policy -
-        #  for example, same GPU schedule...
         for item in prefill_items:
             next_wid = self.next_worker.wid if self.next_worker else None
             item.finish_prefill(is_finished_one_round=self.is_last_in_pipeline, wid=self.wid, next_wid=next_wid)
@@ -290,13 +285,11 @@ class Worker:
             # Arrive at worker who is at the last of pipeline.
             if item.should_finish():
                 # ... just a sanity check to avoid any infinite loop.
-                # TODO: (Refactor) Maybe consider removing this check.
                 continue
             self.forward_decode(item, to_scheduler=(not self.should_request_stay))
         return
 
     def _exit_decode(self, decode_reqs):
-        # TODO: (feat) Chunk-prefill usually don't have a hard constraint on decode-related queries.
         if not decode_reqs:
             return
         next_wid = self.next_worker.wid if self.next_worker else None
