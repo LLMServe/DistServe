@@ -84,44 +84,21 @@ def parse_args(args_=None):
     return args
 
 
-def main(args):
-    cv = args.cv
-    N = args.N
-    rate = args.rate
-    seed = args.seed
-    workload: Union[Literal["sharegpt", "longbench", "humaneval"], str] = args.workload
-    if args.model == 'opt_13b':
-        model_type = ModelTypes.opt_13b
-    elif args.model == 'opt_66b':
-        model_type = ModelTypes.opt_66b
-    elif args.model == 'opt_175b':
-        model_type = ModelTypes.opt_175b
-    else:
-        raise ValueError(f'Unknown model type: {args.model}. Only support: ["opt_13b", "opt_66b", "opt_175b"].')
+def check_dataset_existence(x):
+    if not Path(x).exists():
+        raise FileNotFoundError(f"Dataset {x} does not exist.")
+    return
 
-    PP_prefill = args.pp_prefill
-    PP_decode = args.pp_decode
-    TP_Prefill = args.tp_prefill
-    TP_Decode = args.tp_decode
 
-    # Setting the seed to sample request / process
+def load_workload(workload, N, rate, cv, seed):
     random.seed(args.seed)
     np.random.seed(args.seed)
-
-    # TODO: Check the random process is set correctly.
     if workload in ['sharegpt', 'longbench', 'humaneval']:
         dataset_root = Path(__file__).parent
-        if workload == 'sharegpt':
-            requests = sample_requests(dataset_root / 'data/sharegpt.dataset', N)
-        elif workload == 'longbench':
-            requests = sample_requests(dataset_root / 'data/longbench.dataset', N)
-        elif workload == 'humaneval':
-            requests = sample_requests(dataset_root / 'data/humaneval.dataset', N)
-        else:
-            raise ValueError(
-                f'Unknown workload type: {workload}. '
-                f'Only support: ["sharegpt", "longbench", "humaneval"] or specified custom path to workload'
-            )
+        dataset_file = dataset_root / "data" / f"{workload}.dataset"
+        check_dataset_existence(dataset_file)
+        requests = sample_requests(dataset_file, N)
+
         if args.arrival == 'fixed':
             delay = 1 / rate * 1000  # ms
             arrival = get_fixed_interarrival(N, delay)
@@ -138,41 +115,47 @@ def main(args):
         absolute_arrival = [d['start_time'] for d in data]
         arrival = convert_absolutearrival_to_interarrival(absolute_arrival)
         pass
+    return requests, arrival
+
+
+def main(args):
+    cv = args.cv
+    N = args.N
+    rate = args.rate
+    seed = args.seed
+    workload: Union[Literal["sharegpt", "longbench", "humaneval"], str] = args.workload
+    model_type = ModelTypes.model_str_to_object(args.model)
+
+    PP_prefill = args.pp_prefill
+    PP_decode = args.pp_decode
+    TP_Prefill = args.tp_prefill
+    TP_Decode = args.tp_decode
+
+    # Setting the seed to sample request / process
+    requests, arrival = load_workload(workload, N, rate, cv, seed)
 
     # Run simulation
     env = simpy.Environment()
+    worker_config = WorkerConfig(
+        model_type=model_type,
+        TP=TP_Prefill, TP_Prefill=TP_Prefill, TP_Decode=TP_Prefill,
+        chunked_prefill_max_tokens=0,  # 0 means inf
+        prefill_max_batch_size=0,  # 0 means inf
+    )
     if args.backend == 'vllm':
         cluster = VLLMCluster(
-            env=env,
-            N_instance=1,
-            PP=PP_prefill,
-            worker_configs=WorkerConfig(
-                model_type=model_type,
-                TP=TP_Prefill, TP_Prefill=TP_Prefill, TP_Decode=TP_Prefill,
-                chunked_prefill_max_tokens=0,  # TODO: Check what value this should be set to.
-                prefill_max_batch_size=0,  # TODO: Set this as the max batch size.
-
-            ),
-        ).run()
-        put_requests_with_interarrivals(env, cluster.scheduler, arrival, requests)
-        env.run()
+            env=env, PP=PP_prefill, worker_configs=worker_config,
+        )
     elif args.backend == 'distserve':
         cluster = DisaggCluster(
-            env=env,
-            N_prefill_instance=1,
-            N_decode_instance=1,
-            PP_prefill=PP_prefill,
-            PP_decode=PP_decode,
-            worker_configs=WorkerConfig(
-                model_type=model_type,
-                TP_Prefill=TP_Prefill, TP_Decode=TP_Decode,
-                TP=1,  # TODO(Refactor): Deprecated field, just use the default value in case of exception.
-                chunked_prefill_max_tokens=0,  # TODO: Check what value this should be set to.
-                prefill_max_batch_size=0,  # TODO: Set this as the max batch size.
-            ),
-        ).run()
-        put_requests_with_interarrivals(env, cluster.scheduler, arrival, requests)
-        env.run()
+            env=env, PP_prefill=PP_prefill, PP_decode=PP_decode,
+            worker_configs=worker_config,
+        )
+    else:
+        raise ValueError(f"Unknown backend: {args.backend}")
+    cluster.run()
+    put_requests_with_interarrivals(env, cluster.scheduler, arrival, requests)
+    env.run()
 
     #
     # Handle vllm in data processing

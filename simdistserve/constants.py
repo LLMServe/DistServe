@@ -12,3 +12,13 @@ class ModelTypes:
         if x == ModelTypes.opt_175b:
             return 'facebook/opt-175b'
         raise ValueError(x)
+
+    @staticmethod
+    def model_str_to_object(model):
+        if model == 'opt_13b':
+            return ModelTypes.opt_13b
+        if model == 'opt_66b':
+            return ModelTypes.opt_66b
+        if model == 'opt_175b':
+            return ModelTypes.opt_175b
+        raise ValueError(model)
