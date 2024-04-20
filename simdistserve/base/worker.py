@@ -46,6 +46,7 @@ class Worker:
         TP_Prefill: int = None,
         TP_Decode: int = None,
         enable_chunked_prefill=False,
+        prefill_max_tokens=10 ** 7,
         decode_max_tokens=10 ** 7,
     ):
         self.env = env
@@ -81,7 +82,7 @@ class Worker:
         self.prefill_max_batch_size: int = prefill_max_batch_size if prefill_max_batch_size > 0 else 10 ** 7
         self.decode_max_batch_size: int = decode_max_batch_size if decode_max_batch_size > 0 else 10 ** 7
         # Maximum number of tokens for a prefill request to batch.
-        self.prefill_max_tokens: int = prefill_max_batch_size if prefill_max_batch_size > 0 else 10 ** 7
+        self.prefill_max_tokens: int = prefill_max_tokens if prefill_max_tokens > 0 else 10 ** 7
         self.decode_max_tokens: int = decode_max_tokens if decode_max_tokens > 0 else 10 ** 7
         # Enable chunked prefill (if True) or prioritization scheduling (if False)
         self.enable_chunked_prefill: bool = enable_chunked_prefill
