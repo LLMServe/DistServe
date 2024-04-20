@@ -7,11 +7,11 @@ from collections import deque
 from typing import Optional, List, Iterable, TYPE_CHECKING, Union, TypedDict
 from uuid import UUID
 
-from simdisagg.timemodule.worktime import get_prefill_time, get_decode_time
+from simdistserve.timemodule.worktime import get_prefill_time, get_decode_time
 
 if TYPE_CHECKING:
-    from simdisagg.base.scheduler import Scheduler
-    from simdisagg.base.request import Request
+    from simdistserve.base.scheduler import Scheduler
+    from simdistserve.base.request import Request
 
 
 # TODO: (Refactor) Make this a configuration.

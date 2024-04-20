@@ -13,18 +13,18 @@ import numpy as np
 import pandas as pd
 import simpy
 
-from simdisagg.base.organize_data import organize_request_df, organize_request_event_df, \
+from simdistserve.base.organize_data import organize_request_df, organize_request_event_df, \
     calculate_per_request_latency, organize_worker_event_df
-from simdisagg.base.scheduler import put_requests_with_interarrivals
-from simdisagg.base.worker import WorkerConfig
-from simdisagg.base.workload import (
+from simdistserve.base.scheduler import put_requests_with_interarrivals
+from simdistserve.base.worker import WorkerConfig
+from simdistserve.base.workload import (
     get_gamma_interarrival,
     get_fixed_interarrival,
     convert_absolutearrival_to_interarrival, convert_pd_pair_to_request, sample_requests
 )
-from simdisagg.clusters.disagg import DisaggCluster
-from simdisagg.clusters.vllm import VLLMCluster
-from simdisagg.timemodule.worktime import ModelTypes
+from simdistserve.clusters.disagg import DisaggCluster
+from simdistserve.clusters.vllm import VLLMCluster
+from simdistserve.timemodule.worktime import ModelTypes
 
 
 def parse_args(args_=None):

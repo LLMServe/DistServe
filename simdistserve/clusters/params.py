@@ -1,7 +1,7 @@
 import dataclasses
 from typing import List, Literal, Optional
 
-from simdisagg.base.request import Request
+from simdistserve.base.request import Request
 
 Evalstr = str
 

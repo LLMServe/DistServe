@@ -6,7 +6,7 @@ from typing import List
 
 import numpy as np
 
-from simdisagg.base.request import Request
+from simdistserve.base.request import Request
 
 
 @contextmanager

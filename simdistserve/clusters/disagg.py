@@ -2,9 +2,9 @@ from functools import reduce
 from itertools import chain
 from typing import List, Optional
 
-from simdisagg.base.scheduler import Scheduler
-from simdisagg.base.worker import Worker, WorkerConfig
-from simdisagg.utils import set_next_worker
+from simdistserve.base.scheduler import Scheduler
+from simdistserve.base.worker import Worker, WorkerConfig
+from simdistserve.utils import set_next_worker
 
 
 class DisaggCluster:

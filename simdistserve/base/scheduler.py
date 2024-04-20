@@ -2,8 +2,8 @@ from queue import Queue
 from typing import List, TYPE_CHECKING, Tuple, Union
 
 if TYPE_CHECKING:
-    from simdisagg.base.request import Request
-    from simdisagg.base.worker import Worker
+    from simdistserve.base.request import Request
+    from simdistserve.base.worker import Worker
 
 
 class Scheduler:
