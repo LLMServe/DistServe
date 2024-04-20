@@ -136,16 +136,17 @@ def main(args):
     PP_prefill = args.pp_prefill
     TP_Decode = args.tp_decode
     PP_decode = args.pp_decode
-    prefill_max_tokens = get_max_num_tokens(model_type, TP_Prefill, PP_prefill)
-    decode_max_tokens = get_max_num_tokens(model_type, TP_Decode, PP_decode)
 
     #
     # Handle vllm in data processing
     #
+    prefill_max_tokens = get_max_num_tokens(model_type, TP_Prefill, PP_prefill)
     if args.backend == 'vllm':
         TP_Decode = PP_decode = 0
         decode_max_tokens = prefill_max_tokens
         pass
+    else:
+        decode_max_tokens = get_max_num_tokens(model_type, TP_Decode, PP_decode)
 
     # Setting the seed to sample request / process
     requests, arrival = load_workload(workload, N, rate, cv, seed, process)
