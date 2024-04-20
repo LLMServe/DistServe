@@ -27,4 +27,4 @@ max_num_tokens_data = load_profile_data()
 def get_max_num_tokens(model: ModelTypes, tp: int, pp: int) -> int:
     model: str = ModelTypes.formalize_model_name(model)
     max_num_tokens = max_num_tokens_data[model][(tp, pp)]
-    return max_num_tokens["max_num_tokens"].values[0]
+    return max_num_tokens
