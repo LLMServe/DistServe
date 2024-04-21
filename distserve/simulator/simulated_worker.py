@@ -15,6 +15,9 @@ from distserve.logger import init_logger
 
 logger = init_logger(__name__)
 
+RAY_OVERHEAD_BLOCKING = 1    # In ms
+RAY_OVERHEAD_NONBLOCKING = 4 # In ms
+
 class SimulatedWorker:
     """A worker class that executes (a partition of) the model on a GPU.
 
@@ -63,18 +66,15 @@ class SimulatedWorker:
 
     def _get_block_size_in_bytes(
         self,
-        block_size: int,
-        model_config: ModelConfig,
-        parallel_config: ParallelConfig,
     ) -> int:
         # the shape of one slot in k/v cache is [num_layers, num_local_heads, block_size, head_dim]
-        num_layers = model_config.get_num_layers(parallel_config)
-        num_heads = model_config.get_num_heads(parallel_config)
-        head_dim = model_config.get_head_size()
+        num_layers = self.model_config.get_num_layers(self.parallel_config)
+        num_heads = self.model_config.get_num_heads(self.parallel_config)
+        head_dim = self.model_config.get_head_size()
 
-        key_cache_size = num_layers * num_heads * block_size * head_dim
+        key_cache_size = num_layers * num_heads * self.cache_config.block_size * head_dim
         total = key_cache_size * 2
-        dtype_size = model_config.get_dtype_size()
+        dtype_size = self.model_config.get_dtype_size()
         return total * dtype_size
 
     def _profile_num_available_blocks(
@@ -91,9 +91,7 @@ class SimulatedWorker:
         )
         logger.info(f"Total GPU memory: {self.simulator_config.gpu_mem_size_gb} GB")
         logger.info(f"Runtime peak memory (est.): {peak_runtime_memory / GB:.3f} GB")
-        block_size_in_bytes = self._get_block_size_in_bytes(
-            block_size, self.model_config, self.parallel_config
-        )
+        block_size_in_bytes = self._get_block_size_in_bytes()
         logger.info(
             f"kv cache size for one token: {block_size_in_bytes / block_size / MB:.5f} MB"
         )
@@ -110,6 +108,11 @@ class SimulatedWorker:
         set_random_seed(self.model_config.seed)
         return num_gpu_blocks, num_cpu_blocks
 
+    async def _simulate_ray_overhead(self):
+        time.sleep(RAY_OVERHEAD_BLOCKING / 1000.0)
+        await asyncio.sleep(RAY_OVERHEAD_NONBLOCKING / 1000.0)
+        return
+    
     async def step(
         self,
         request_ids: List[int],
@@ -118,6 +121,7 @@ class SimulatedWorker:
         block_table,
     ) -> List[int]:
         """Run one step of inference on the batch of requests."""
+        await self._simulate_ray_overhead()
         batch_size = len(request_ids)
         generated_tokens_ids = [102 for _ in range(batch_size)] # 102 is token "a"
         if self.stage == Stage.CONTEXT:
@@ -127,10 +131,9 @@ class SimulatedWorker:
             )
         else:
             estimated_time = self.estimator.estimate_decoding_time_ms(
-                sum([num_previous_tokens for num_previous_tokens in first_token_indexes]),
+                sum([num_previous_tokens+1 for num_previous_tokens in first_token_indexes]),
                 batch_size
             )
-        estimated_time += 1 # add 1ms for Ray's overhead
         await asyncio.sleep(estimated_time / 1000.0)
 
         return generated_tokens_ids
@@ -142,36 +145,47 @@ class SimulatedWorker:
     ):
         return
                 
-    def migrate_blocks(
+    async def migrate_blocks(
         self,
         context_block_indexes: List[int],
         context_parallel_config: ParallelConfig,
         decoding_block_indexes: List[int]
     ):
+        await self._simulate_ray_overhead()
+        estimated_time_ms = self._get_block_size_in_bytes() * len(context_block_indexes) / (600*GB) * 1000
+        estimated_time_ms += 0.1
+        await asyncio.sleep(estimated_time_ms / 1000.0)
         return
         
-    def swap_blocks(
+    async def swap_blocks(
         self,
         request_ids: List[int],
         source_block_ids: List[int],
         target_block_ids: List[int],
         is_swap_in: bool,
     ):
+        await self._simulate_ray_overhead()
+        estimated_time_ms = self._get_block_size_in_bytes() * len(source_block_ids) / (32*GB) * 1000
+        await asyncio.sleep(estimated_time_ms / 1000.0)
         return
 
-    def clear_request_resource(self, request_id: int):
+    async def clear_request_resource(self, request_id: int):
         """Clear the resources associated with the request."""
         """This is called by LLMEngine when a request is finished or aborted"""
+        await self._simulate_ray_overhead()
         return
 
-    def clear_request_resource_batched(self, requests: List[Request]):
+    async def clear_request_resource_batched(self, requests: List[Request]):
         """Clear the resources associated with the requests."""
+        await self._simulate_ray_overhead()
         return
 
-    def wait_for_all_swap_in(self):
+    async def wait_for_all_swap_in(self):
         """Wait for all swap in to finish"""
+        await self._simulate_ray_overhead()
         return
 
-    def wait_for_all_swap_out(self):
+    async def wait_for_all_swap_out(self):
         """Wait for all swap out to finish"""
+        await self._simulate_ray_overhead()
         return

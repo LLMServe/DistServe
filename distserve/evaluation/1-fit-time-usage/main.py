@@ -95,7 +95,7 @@ def fit_one_abc(
         print(f"{dp.batch_size:3d}  {dp.input_len:6d}  {t:9.2f}  {pred_time_usage:9.2f}  {cur_rel_err*100:6.2f}%")
     
     rel_errs = np.array(rel_errs)
-    print(f"Max relative error: {np.max(rel_errs)*100:.2f}%")
+    print(f"Max relative error: {np.max(np.abs(rel_errs))*100:.2f}%")
     print(f"Avg relative error: {np.mean(np.abs(rel_errs))*100:.2f}%")
     print(f"Avg sqrt(relerr^2): {np.sqrt(np.mean(rel_errs**2))*100:.2f}%")
     
@@ -115,6 +115,8 @@ def main(args: argparse.Namespace):
         if (dp.model, dp.tp_world_size) not in models_and_tp_sizes:
             models_and_tp_sizes.append((dp.model, dp.tp_world_size))
     
+    DECODING_LARGE_SMALL_BS_THRESHOLD = 96-1
+    
     result = {}
     for (model, tp_world_size) in models_and_tp_sizes:
         print(f"Fitting model {model} with tp_world_size {tp_world_size} (Prefill stage)")
@@ -128,30 +130,49 @@ def main(args: argparse.Namespace):
             lambda dp: dp.batch_size*dp.input_len,
             lambda dp: dp.batch_size*dp.input_len**2,
             lambda dp: dp.prefill_time,
-            lambda dp: dp.prefill_time**0.1
+            lambda dp: 1
         )
         print(prefill_abc)
         
-        print(f"Fitting model {model} with tp_world_size {tp_world_size} (Decoding stage)")
+        print(f"Fitting model {model} with tp_world_size {tp_world_size} (Decoding stage, small batch size)")
         cur_data_points = [
             dp
             for dp in data_points
             if dp.model == model and dp.tp_world_size == tp_world_size
+            if dp.batch_size <= DECODING_LARGE_SMALL_BS_THRESHOLD
         ]
-        decoding_abc = fit_one_abc(
+        decoding_smallbs_abc = fit_one_abc(
             cur_data_points,
             lambda dp: dp.batch_size*dp.input_len,
             lambda dp: dp.batch_size,
             lambda dp: dp.decoding_time,
-            lambda dp: dp.decoding_time**0.1
+            lambda dp: 1
         )
-        print(decoding_abc)
+        print(decoding_smallbs_abc)
+        
+        print(f"Fitting model {model} with tp_world_size {tp_world_size} (Decoding stage, large batch size)")
+        cur_data_points = [
+            dp
+            for dp in data_points
+            if dp.model == model and dp.tp_world_size == tp_world_size
+            if dp.batch_size > DECODING_LARGE_SMALL_BS_THRESHOLD
+        ]
+        decoding_largebs_abc = fit_one_abc(
+            cur_data_points,
+            lambda dp: dp.batch_size*dp.input_len,
+            lambda dp: dp.batch_size,
+            lambda dp: dp.decoding_time,
+            lambda dp: 1
+        )
+        print(decoding_largebs_abc)
         
         if model not in result:
             result[model] = {}
         result[model][tp_world_size] = {
+            "decoding_large_small_bs_threshold": DECODING_LARGE_SMALL_BS_THRESHOLD,
             "prefill": prefill_abc.tolist(),
-            "decoding": decoding_abc.tolist()
+            "decoding_smallbs": decoding_smallbs_abc.tolist(),
+            "decoding_largebs": decoding_largebs_abc.tolist()
         }
     
     with open(output_path, "w") as f:

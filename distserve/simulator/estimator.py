@@ -17,13 +17,19 @@ class Estimator:
         self.pp_world_size = pp_world_size
         self.pp_factor = 1.0 / self.pp_world_size   # TODO maybe need to be multiplied
         
+        self.decoding_large_small_bs_threshold = self.profiler_data[model_name][str(tp_world_size)]["decoding_large_small_bs_threshold"]
         self.prefill_abc = self.profiler_data[model_name][str(tp_world_size)]["prefill"]
-        self.decoding_abc = self.profiler_data[model_name][str(tp_world_size)]["decoding"]
+        self.decoding_smallbs_abc = self.profiler_data[model_name][str(tp_world_size)]["decoding_smallbs"]
+        self.decoding_largebs_abc = self.profiler_data[model_name][str(tp_world_size)]["decoding_largebs"]
     
     def estimate_prefill_time_ms(self, num_total_tokens: int, sum_num_tokens_sqr: int) -> float:
         return (self.prefill_abc[0] + self.prefill_abc[1]*num_total_tokens + self.prefill_abc[2]*sum_num_tokens_sqr) * self.pp_factor
 
     def estimate_decoding_time_ms(self, num_total_tokens: int, batch_size: int) -> float:
-        return (self.decoding_abc[0] + self.decoding_abc[1]*num_total_tokens + self.decoding_abc[2]*batch_size) * self.pp_factor
+        if batch_size <= self.decoding_large_small_bs_threshold:
+            decoding_abc = self.decoding_smallbs_abc
+        else:
+            decoding_abc = self.decoding_largebs_abc
+        return (decoding_abc[0] + decoding_abc[1]*num_total_tokens + decoding_abc[2]*batch_size) * self.pp_factor
     
     
