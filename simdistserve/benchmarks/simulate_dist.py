@@ -124,7 +124,9 @@ def load_workload(workload, N, rate, cv, seed, process: Literal["fixed", "gamma"
     return requests, arrival
 
 
-def main(args):
+def main(args, outputs=None):
+    outputs = outputs if outputs is not None else {}
+
     cv = args.cv
     N = args.N
     rate = args.rate
@@ -186,6 +188,9 @@ def main(args):
     per_request_latency_df = calculate_per_request_latency(
         request_event_df, request_df.output_lens
     )
+    outputs['request_df'] = request_df
+    outputs['request_event_df'] = request_event_df
+    outputs['per_request_latency_df'] = per_request_latency_df
     if args.output_request_info:
         with open(args.output_request_info, 'w') as f:
             request_df.to_csv(f, index=False)
@@ -244,6 +249,7 @@ def main(args):
         pass
 
     df = pd.DataFrame(output_results, columns=columns)
+    outputs['latency_df'] = df
 
     if args.output:
         with open(args.output, 'w') as f:
@@ -258,6 +264,8 @@ def main(args):
     if args.output_worker:
         worker_df = organize_worker_event_df(cluster)
         worker_df.to_csv(args.output_worker, index=False)
+
+        outputs['worker_df'] = worker_df
 
     #
     # Return if the agreement of prefill/decode is met
