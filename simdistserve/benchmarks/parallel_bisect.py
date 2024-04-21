@@ -25,7 +25,8 @@ def main():
     configs = get_distserve_configs(ModelTypes.opt_13b, 4, 8, True)
 
     manager = Manager()
-    shared_lock = manager.Lock()
+    # shared_lock = manager.Lock()
+    shared_lock = None
     shared_best_goodput = manager.Value('best_goodput', 0)
     shared_best_config = manager.Value('best_config', None)
     max_cpu_count = os.cpu_count() - 2
@@ -57,8 +58,13 @@ def main():
         processes.append(proc)
         pass
 
+    print("Final result: ", shared_best_config.value, shared_best_goodput.value)
+
 
 if __name__ == '__main__':
     freeze_support()
     main()
     pass
+
+# configs = get_distserve_configs(ModelTypes.opt_13b, 4, 8, True)
+# print(configs)

@@ -65,7 +65,7 @@ def run_binary_search(
         '--slo-scales', '[1]',
     ]
 
-    while (high - low) > 0.1:
+    while (high - low) > 0.5:
         with shared_lock:
             print(pid, 'shared', config, shared_best_goodput.value, shared_best_config.value, (low, high))
             low = max(shared_best_goodput.value, low)
