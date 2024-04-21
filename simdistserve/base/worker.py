@@ -139,37 +139,11 @@ class Worker:
 
         pass
 
-    def __run_with_schedule_delay(self):
-        """TODO:(Hack) This is a hack to make the simulation consider schedule delay."""
-        while True:
-            if not (self.prefill_queue or self.decode_queue):
-                yield self._wakeup_event
-
-            # Add a random 0~2 round of decoding scheduling delay, if this instance is the first in pipeline.
-            if self.is_first_in_pipeline and self.prefill_queue and self._prefill_sched_delay < 0:
-                # self._prefill_sche_delay = random.randint(0, 5)
-                self._prefill_sched_delay = random.randint(0, 1)
-                # self._prefill_sche_delay = random.randint(1, 5)
-                # self._prefill_sche_delay = 2
-                pass
-
-            if self.prefill_queue and self._prefill_sched_delay <= 0:
-                yield from self.do_prefill()
-            elif self.decode_queue:
-                yield from self.do_decode()
-            else:
-                # Incur a standard delay of the prefill?
-                delay = random.randint(5, 10)
-                # delay = random.randint(5, 20)
-                yield self.env.timeout(delay)
-                pass
-
-            self._prefill_sched_delay -= 1
-
-            self._log_event("wait")
-            pass
-
-        pass
+    def add_ray_overhead(self, sum_of_tokens) -> int:
+        base_overhead = 2
+        k = 0.0001
+        delay = base_overhead + sum_of_tokens * k
+        return delay
 
     # run = run_with_schedule_delay
 
@@ -334,8 +308,10 @@ class Worker:
             prefill_len_list=[x.current_prefill_lens for x in prefill_items],
             # __prefill_reqs=prefill_items,
             # __decode_reqs=decode_reqs,
-
         )
+        num_tokens = sum(x.current_context_len for x in (prefill_items + decode_reqs))
+        if self.is_first_in_pipeline:
+            delay += self.add_ray_overhead(num_tokens)
         # Set the number of prefills in progress such that the scheduler get proper information about the worker.
         self._prefill_ips = len(prefill_items)
         yield self.env.timeout(delay)
@@ -355,6 +331,9 @@ class Worker:
         delay = get_decode_time(batch_size, pp=self.cluster.PP_decode,
                                 model_type=self.model_type, TP=self.TP_Decode,
                                 token_generated_list=_token_generated_list)
+        num_tokens = sum(x.current_context_len for x in decode_reqs)
+        if self.is_first_in_pipeline:
+            delay += self.add_ray_overhead(num_tokens)
         yield self.env.timeout(delay)
         self._exit_decode(decode_reqs)
         return
