@@ -16,11 +16,9 @@ def main():
     configs = get_distserve_configs(ModelTypes.opt_13b, 4, 8, True)
 
     manager = Manager()
-    # shared_lock = manager.Lock()
-    shared_lock = None
-    shared_best_goodput = manager.Value('best_goodput', 0)
-    shared_best_config = manager.Value('best_config', None)
     max_cpu_count = os.cpu_count() - 2
+    # add a multiprocess dict that makes the values returned
+    shared_dict = manager.Dict()
 
     processes = deque([])
     for pid, config in tqdm(enumerate(configs), total=len(configs)):
@@ -34,11 +32,10 @@ def main():
                 (200, 100, 90, 90),
             ),
             kwargs=dict(
-                max_per_gpu_rate=6,
-                shared_lock=shared_lock,
-                shared_best_goodput=shared_best_goodput,
-                shared_best_config=shared_best_config,
+                max_per_gpu_rate=5,
                 pid=pid,
+                esp=0.25,
+                shared_dict=shared_dict,
             )
         )
         if len(processes) >= max_cpu_count:
@@ -49,7 +46,7 @@ def main():
         processes.append(proc)
         pass
 
-    print("Final result: ", shared_best_config.value, shared_best_goodput.value)
+    print("Final result: ", )
 
 
 if __name__ == '__main__':

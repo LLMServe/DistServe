@@ -13,15 +13,10 @@ def run_binary_search(
     backend: str,
     containment_targets: '(prefill_target, decode_target, prefill_containment, decode_containment)',
     max_per_gpu_rate: int = 16,
-    shared_lock=None,
-    shared_best_goodput=None,
-    shared_best_config=None,
     pid=0,
     esp=0.5,
+    shared_dict=None,
 ):
-    if shared_lock is None:
-        shared_lock = nullcontext()
-
     #
     # make config args
     #
@@ -49,7 +44,6 @@ def run_binary_search(
     #
     # bisect the integer range between 1 <= per_gpu_rate <= max_per_gpu_rate
     #
-    # low = shared_best_goodput.value
     low = 0
     high = max_per_gpu_rate
     best_per_gpu_rate = 0
@@ -86,30 +80,15 @@ def run_binary_search(
             # The experiment not passing the attainment threshold
             high = this_rate
             continue
-        print(pid, config, success, this_rate)
 
         # Experiment passed the attainment threshold
         low = this_rate
         best_per_gpu_rate = this_rate
-        # if best_per_gpu_rate < shared_best_goodput.value:
-        #     low = shared_best_goodput.value
-        #     print(pid, 'ignored', low, config)
-        #     continue
-
-        # # Update the global config if detected the global is even better
-        # with shared_lock:
-        #     print(pid, 'read', config, shared_best_goodput.value)
-        #     if shared_best_goodput.value < best_per_gpu_rate:
-        #         print(pid, 'update', best_per_gpu_rate, config)
-        #         shared_best_config.value = config
-        #         shared_best_goodput.value = best_per_gpu_rate
         pass
 
-    print(pid, 'Finish', config, best_per_gpu_rate)
-    with shared_lock:
-        if shared_best_goodput.value < best_per_gpu_rate:
-            shared_best_config.value = config
-            shared_best_goodput.value = best_per_gpu_rate
+    if shared_dict is not None:
+        shared_dict[config] = best_per_gpu_rate
+        
     return best_per_gpu_rate
 
 
