@@ -15,10 +15,10 @@ class ModelTypes:
 
     @staticmethod
     def model_str_to_object(model):
-        if model == 'opt_13b':
+        if model == 'opt_13b' or model == "facebook/opt-13b":
             return ModelTypes.opt_13b
-        if model == 'opt_66b':
+        if model == 'opt_66b' or model == "facebook/opt-66b":
             return ModelTypes.opt_66b
-        if model == 'opt_175b':
+        if model == 'opt_175b' or model == "facebook/opt-175b":
             return ModelTypes.opt_175b
         raise ValueError(model)
