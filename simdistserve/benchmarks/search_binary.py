@@ -1,3 +1,5 @@
+import time
+
 from simdistserve.benchmarks.simulate_dist import run_experiment, parse_args
 from simdistserve.constants import ModelTypes
 
@@ -61,6 +63,7 @@ def run_binary_search(
         '--slo-scales', '[1]',
     ]
 
+    time_durations = []
     while (high - low) > esp:
         # Run simulation
         # low = max(shared_best_goodput.value, low)
@@ -70,7 +73,10 @@ def run_binary_search(
         args = [str(i) for i in args]
         args = parse_args(args)
         try:
+            start_time = time.time()
             is_prefill_contained, is_decode_contained, df = run_experiment(args)
+            end_time = time.time()
+            time_durations.append((config, this_rate, end_time - start_time))
         except Exception as e:
             return None
 
@@ -87,8 +93,8 @@ def run_binary_search(
         pass
 
     if shared_dict is not None:
-        shared_dict[config] = best_per_gpu_rate
-        
+        shared_dict[config] = (best_per_gpu_rate, time_durations)
+
     return best_per_gpu_rate
 
 
