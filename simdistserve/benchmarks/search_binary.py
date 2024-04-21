@@ -21,7 +21,7 @@ def run_binary_search(
 ):
     cpu_count = os.cpu_count()
     cpu_core = pid % cpu_count
-    os.sched_setaffinity(cpu_core, {cpu_core})
+    os.sched_setaffinity(0, {cpu_core})
 
 
     #
