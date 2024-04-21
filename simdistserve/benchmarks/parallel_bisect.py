@@ -43,7 +43,7 @@ def main():
                 (200, 100, 90, 90),
             ),
             kwargs=dict(
-                max_per_gpu_rate=16,
+                max_per_gpu_rate=8,
                 shared_lock=shared_lock,
                 shared_best_goodput=shared_best_goodput,
                 shared_best_config=shared_best_config,

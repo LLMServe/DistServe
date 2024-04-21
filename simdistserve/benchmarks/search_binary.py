@@ -75,7 +75,10 @@ def run_binary_search(
         args = [*fixed_args, *config_args, '--rate', rate, ]
         args = [str(i) for i in args]
         args = parse_args(args)
-        is_prefill_contained, is_decode_contained, df = run_experiment(args)
+        try:
+            is_prefill_contained, is_decode_contained, df = run_experiment(args)
+        except Exception as e:
+            return None
 
         # Update the range
         success = is_prefill_contained and is_decode_contained
