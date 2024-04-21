@@ -32,8 +32,9 @@ def parse_args(args_=None):
     parser = argparse.ArgumentParser(description='Simulation: vLLM, DistServe')
     parser.add_argument('--backend', type=str, default='distserve',
                         help='Backend to simulate (distserve, vllm)')
-    parser.add_argument('--model', type=str, default='opt_13b',
-                        help='Model type (opt_13b, opt_66b, opt_175b)')
+    parser.add_argument('--model', type=str, default='facebook/opt-13b',
+                        help='Model type (opt_13b, opt_66b, opt_175b,'
+                             'or facebook/opt-13b, facebook/opt-66b, facebook/opt-175b)')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--rate', type=float, default=float("inf"),
                         help='Rate of requests per second')
@@ -280,6 +281,9 @@ def main(args):
         pass
 
     return is_prefill_contained, is_decode_contained, df
+
+
+run_experiment = main
 
 
 def test_opt_13b_grid_search_serial():
