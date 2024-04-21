@@ -18,7 +18,7 @@ def main():
     manager = Manager()
     max_cpu_count = os.cpu_count() - 2
     # add a multiprocess dict that makes the values returned
-    shared_dict = manager.Dict()
+    shared_dict = manager.dict()
 
     processes = deque([])
     for pid, config in tqdm(enumerate(configs), total=len(configs)):
