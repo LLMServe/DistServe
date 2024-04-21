@@ -46,10 +46,6 @@ def main():
         processes.append(proc)
         pass
 
-    print(shared_dict)
-
-    print("Final result: ", )
-
 
 if __name__ == '__main__':
     freeze_support()

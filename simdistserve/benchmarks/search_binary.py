@@ -17,7 +17,6 @@ def run_binary_search(
     max_per_gpu_rate: int = 16,
     pid=0,
     esp=0.5,
-    shared_dict=None,
 ):
     #
     # make config args
@@ -92,9 +91,7 @@ def run_binary_search(
         best_per_gpu_rate = this_rate
         pass
 
-    if shared_dict is not None:
-        shared_dict[config] = (best_per_gpu_rate, time_durations)
-
+    print(config, best_per_gpu_rate)
     return best_per_gpu_rate
 
 
