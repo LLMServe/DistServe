@@ -15,10 +15,7 @@ from simdistserve.constants import ModelTypes
 def main():
     configs = get_distserve_configs(ModelTypes.opt_13b, 4, 8, True)
 
-    manager = Manager()
     max_cpu_count = os.cpu_count() - 2
-    # add a multiprocess dict that makes the values returned
-    # shared_dict = manager.dict()
 
     processes = deque([])
     for pid, config in tqdm(enumerate(configs), total=len(configs)):

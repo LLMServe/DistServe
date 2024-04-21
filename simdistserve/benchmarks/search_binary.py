@@ -1,3 +1,4 @@
+import os
 import time
 
 from simdistserve.benchmarks.simulate_dist import run_experiment, parse_args
@@ -18,6 +19,11 @@ def run_binary_search(
     pid=0,
     esp=0.5,
 ):
+    cpu_count = os.cpu_count()
+    cpu_core = pid % cpu_count
+    os.sched_setaffinity(cpu_core, {cpu_core})
+
+
     #
     # make config args
     #
@@ -75,6 +81,7 @@ def run_binary_search(
             start_time = time.time()
             is_prefill_contained, is_decode_contained, df = run_experiment(args)
             end_time = time.time()
+            print(end_time - start_time)
             time_durations.append((config, this_rate, end_time - start_time))
         except Exception as e:
             return None
@@ -91,7 +98,6 @@ def run_binary_search(
         best_per_gpu_rate = this_rate
         pass
 
-    print(config, best_per_gpu_rate)
     return best_per_gpu_rate
 
 
