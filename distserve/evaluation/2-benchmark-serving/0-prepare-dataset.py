@@ -206,7 +206,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="sharegpt")
     parser.add_argument("--dataset-path", type=str, required=True)
-    parser.add_argument("--tokenizer", type=str, default="facebook/opt-1.3b")
+    parser.add_argument("--tokenizer", type=str, required=True)
     parser.add_argument("--trust-remote-code", action="store_true")
     parser.add_argument("--output-path", type=str, required=True)
     parser.add_argument("--seed", type=int, default=0)

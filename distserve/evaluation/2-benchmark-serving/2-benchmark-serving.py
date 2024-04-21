@@ -44,7 +44,7 @@ async def run_some_requests(
         "ncols": 90,
         "smoothing": 0.05,
     }
-    issued_pbar = tqdm(total=len(requests), desc="Iss", colour="#FFC0CB", **pbar_args)
+    issued_pbar = tqdm(total=len(requests), desc="Iss", colour="#aaeebb", **pbar_args)
     first_token_generated_pbar = tqdm(total=len(requests), desc="TFT", colour="#ffffff", **pbar_args)
     finished_pbar = tqdm(total=len(requests), desc="Fin", colour="#66ccff", **pbar_args)
     
@@ -205,7 +205,7 @@ def main(args: argparse.Namespace):
             exp_result_path = os.path.join(exp_result_dir, exp_result_filename)
 
             dump_req_result_list(result, exp_result_path)
-        time.sleep(5)
+        time.sleep(2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

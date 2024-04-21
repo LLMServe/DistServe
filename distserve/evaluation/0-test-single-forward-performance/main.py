@@ -47,7 +47,7 @@ def get_profiling_params() -> list[TestParamGroup]:
                 )
                 for (batch_size, input_len) in [
                     (batch_size, input_len)
-                    for batch_size in [1, 2, 4, 8, 16, 32, 64, 128, 192]
+                    for batch_size in [1, 2, 4, 8, 16, 32, 64, 96, 128, 192]
                     for input_len in [4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 284, 512, 768, 1024, 1536, 2020]
                     if batch_size * ((input_len+15)//16*16) <= num_tokens_limit
                 ]
@@ -56,7 +56,7 @@ def get_profiling_params() -> list[TestParamGroup]:
         for (model, tp_world_size, num_tokens_limit) in [
             ("facebook/opt-13b", 1, 49152),
             ("facebook/opt-13b", 2, 98304),
-            ("facebook/opt-13b", 4, 25000),
+            ("facebook/opt-13b", 4, 250000),
             ("facebook/opt-66b", 2, 8192),
             ("facebook/opt-66b", 3, 36864),
             ("facebook/opt-66b", 4, 65000),
