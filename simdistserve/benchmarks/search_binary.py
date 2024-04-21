@@ -48,7 +48,8 @@ def run_binary_search(
     #
     # bisect the integer range between 1 <= per_gpu_rate <= max_per_gpu_rate
     #
-    low = shared_best_goodput.value
+    # low = shared_best_goodput.value
+    low = 0
     high = max_per_gpu_rate
     best_per_gpu_rate = 0
     fixed_args = [
@@ -66,10 +67,8 @@ def run_binary_search(
     ]
 
     while (high - low) > 0.5:
-        with shared_lock:
-            print(pid, 'shared', config, shared_best_goodput.value, shared_best_config.value, (low, high))
-            low = max(shared_best_goodput.value, low)
         # Run simulation
+        # low = max(shared_best_goodput.value, low)
         this_rate = (low + high) / 2
         rate = this_rate * num_gpu
         args = [*fixed_args, *config_args, '--rate', rate, ]
@@ -91,21 +90,25 @@ def run_binary_search(
         # Experiment passed the attainment threshold
         low = this_rate
         best_per_gpu_rate = this_rate
-        if best_per_gpu_rate < shared_best_goodput.value:
-            low = shared_best_goodput.value
-            print(pid, 'ignored', low, config)
-            continue
+        # if best_per_gpu_rate < shared_best_goodput.value:
+        #     low = shared_best_goodput.value
+        #     print(pid, 'ignored', low, config)
+        #     continue
 
-        # Update the global config if detected the global is even better
-        with shared_lock:
-            print(pid, 'read', config, shared_best_goodput.value)
-            if shared_best_goodput.value < best_per_gpu_rate:
-                print(pid, 'update', best_per_gpu_rate, config)
-                shared_best_config.value = config
-                shared_best_goodput.value = best_per_gpu_rate
+        # # Update the global config if detected the global is even better
+        # with shared_lock:
+        #     print(pid, 'read', config, shared_best_goodput.value)
+        #     if shared_best_goodput.value < best_per_gpu_rate:
+        #         print(pid, 'update', best_per_gpu_rate, config)
+        #         shared_best_config.value = config
+        #         shared_best_goodput.value = best_per_gpu_rate
         pass
 
     print(pid, 'Finish', config, best_per_gpu_rate)
+    with shared_lock:
+        if shared_best_goodput.value < best_per_gpu_rate:
+            shared_best_config.value = config
+            shared_best_goodput.value = best_per_gpu_rate
     return best_per_gpu_rate
 
 
