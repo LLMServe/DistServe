@@ -17,6 +17,7 @@ def run_binary_search(
     shared_best_goodput=None,
     shared_best_config=None,
     pid=0,
+    esp=0.5,
 ):
     if shared_lock is None:
         shared_lock = nullcontext()
@@ -66,7 +67,7 @@ def run_binary_search(
         '--slo-scales', '[1]',
     ]
 
-    while (high - low) > 0.5:
+    while (high - low) > esp:
         # Run simulation
         # low = max(shared_best_goodput.value, low)
         this_rate = (low + high) / 2

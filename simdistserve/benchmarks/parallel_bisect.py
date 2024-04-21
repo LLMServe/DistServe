@@ -9,15 +9,6 @@ from simdistserve.benchmarks.search_configs import get_distserve_configs, get_vl
 from simdistserve.constants import ModelTypes
 
 
-# run_binary_search(
-#     ModelTypes.opt_13b,
-#     (1, 1, 1, 1, 1),
-#     "distserve",
-#     (200, 100, 90, 90),
-#     max_per_gpu_rate=16,
-# )
-
-
 # get_distserve_configs(ModelTypes.opt_13b, 4, 8, False)
 # get_vllm_config(ModelTypes.opt_13b, 32)
 
@@ -43,7 +34,7 @@ def main():
                 (200, 100, 90, 90),
             ),
             kwargs=dict(
-                max_per_gpu_rate=8,
+                max_per_gpu_rate=6,
                 shared_lock=shared_lock,
                 shared_best_goodput=shared_best_goodput,
                 shared_best_config=shared_best_config,
