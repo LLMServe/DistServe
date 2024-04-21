@@ -18,7 +18,7 @@ def main():
     manager = Manager()
     max_cpu_count = os.cpu_count() - 2
     # add a multiprocess dict that makes the values returned
-    shared_dict = manager.dict()
+    # shared_dict = manager.dict()
 
     processes = deque([])
     for pid, config in tqdm(enumerate(configs), total=len(configs)):
@@ -35,7 +35,6 @@ def main():
                 max_per_gpu_rate=5,
                 pid=pid,
                 esp=0.25,
-                shared_dict=shared_dict,
             )
         )
         if len(processes) >= max_cpu_count:
