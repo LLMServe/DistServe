@@ -29,6 +29,7 @@ from distserve.context_stage_scheduler import ContextStageSchedConfig, ContextSt
 from distserve.decoding_stage_scheduler import DecodingStageSchedConfig, DecodingStageScheduler, get_decoding_stage_scheduler
 from distserve.simulator.config import SimulatorConfig
 from distserve.simulator.simulated_worker import SimulatedWorker
+from distserve.simulator.utils import Barrier
 
 logger = init_logger(__name__)
 
@@ -156,6 +157,7 @@ class SingleStageLLMEngine(ABC):
         if self.simulator_config.is_simulator_mode:
             for i in range(self.parallel_config.pipeline_parallel_size):
                 workers = []
+                tensor_parallel_barrier = Barrier(self.parallel_config.tensor_parallel_size)
                 for j in range(self.parallel_config.tensor_parallel_size):
                     tmp_parallel_config = copy.deepcopy(self.parallel_config)
                     tmp_parallel_config.pipeline_parallel_rank = i
@@ -167,8 +169,7 @@ class SingleStageLLMEngine(ABC):
                         cache_config=self.cache_config,
                         simulator_config=self.simulator_config,
                         parallel_config=tmp_parallel_config,
-                        pipeline_parallel_id=None,
-                        tensor_parallel_id=None,
+                        tensor_parallel_barrier=tensor_parallel_barrier,
                     )
                     workers.append(worker)
                 self.workers.append(workers)

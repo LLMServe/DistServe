@@ -12,11 +12,12 @@ from distserve.config import ModelConfig, CacheConfig, ParallelConfig
 from distserve.request import Request, BatchedRequests
 from distserve.utils import Stage, set_random_seed, GB, MB
 from distserve.logger import init_logger
+from distserve.simulator.utils import Barrier
 
 logger = init_logger(__name__)
 
 RAY_OVERHEAD_BLOCKING = 1    # In ms
-RAY_OVERHEAD_NONBLOCKING = 4 # In ms
+RAY_OVERHEAD_NONBLOCKING = 2.2 # In ms
 
 class SimulatedWorker:
     """A worker class that executes (a partition of) the model on a GPU.
@@ -35,9 +36,8 @@ class SimulatedWorker:
         model_config: ModelConfig,
         cache_config: CacheConfig,
         simulator_config: SimulatorConfig,
-        parallel_config: ParallelConfig = ParallelConfig(),
-        tensor_parallel_id: List[int] = None,   # Although the type is list[int], it is actually a NCCL unique ID
-        pipeline_parallel_id: List[int] = None, # Same as above
+        parallel_config: ParallelConfig,
+        tensor_parallel_barrier: Barrier    # A barrier with tp_world_size workers
     ) -> None:
         self.worker_id = worker_id
         self.stage = stage
@@ -46,8 +46,7 @@ class SimulatedWorker:
         self.simulator_config = simulator_config
         self.parallel_config = parallel_config
         self.cache_config = cache_config
-        self.tensor_parallel_id = tensor_parallel_id
-        self.pipeline_parallel_id = pipeline_parallel_id
+        self.tensor_parallel_barrier = tensor_parallel_barrier
         self.estimator = Estimator(
             self.simulator_config.profiler_data_path,
             self.model_config.model,
@@ -122,6 +121,7 @@ class SimulatedWorker:
     ) -> List[int]:
         """Run one step of inference on the batch of requests."""
         await self._simulate_ray_overhead()
+        await self.tensor_parallel_barrier.wait()
         batch_size = len(request_ids)
         generated_tokens_ids = [102 for _ in range(batch_size)] # 102 is token "a"
         if self.stage == Stage.CONTEXT:
@@ -129,6 +129,7 @@ class SimulatedWorker:
                 sum([len(tokens) for tokens in input_tokens_batched]),
                 sum([len(tokens)**2 for tokens in input_tokens_batched])
             )
+            estimated_time += 3     # dont know why but it seems that the prefill time may experience some turbulence
         else:
             estimated_time = self.estimator.estimate_decoding_time_ms(
                 sum([num_previous_tokens+1 for num_previous_tokens in first_token_indexes]),
@@ -152,9 +153,6 @@ class SimulatedWorker:
         decoding_block_indexes: List[int]
     ):
         await self._simulate_ray_overhead()
-        estimated_time_ms = self._get_block_size_in_bytes() * len(context_block_indexes) / (600*GB) * 1000
-        estimated_time_ms += 0.1
-        await asyncio.sleep(estimated_time_ms / 1000.0)
         return
         
     async def swap_blocks(
@@ -165,8 +163,6 @@ class SimulatedWorker:
         is_swap_in: bool,
     ):
         await self._simulate_ray_overhead()
-        estimated_time_ms = self._get_block_size_in_bytes() * len(source_block_ids) / (32*GB) * 1000
-        await asyncio.sleep(estimated_time_ms / 1000.0)
         return
 
     async def clear_request_resource(self, request_id: int):
