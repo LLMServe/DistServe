@@ -28,11 +28,16 @@ def get_prefill_time(num_tokens=None, pp=1, bs=1, decode_bs=0, model_type=ModelT
 
 
 def get_decode_time(num_requests, pp=1, model_type=ModelTypes.opt_13b, TP=1, token_generated_list=None, **kw):
-    a, b, c = profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]["decoding"]
+    batch_size = num_requests
+    threshold = profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]["decoding_large_small_bs_threshold"]
+    if batch_size < threshold:
+        a, b, c = profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]["decoding_smallbs"]
+    else:
+        a, b, c = profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]["decoding_largebs"]
     pp_factor = 1 / pp
     pp_const = 1 * pp  # TODO: Modulate the PP overhead
     num_total_tokens = sum(token_generated_list)
-    batch_size = num_requests
+
     delay = a + b * num_total_tokens + c * batch_size
     delay = delay * pp_factor + pp_const
     return delay
