@@ -32,7 +32,7 @@ async def run_some_requests(
     backend: str,
     host: str, port: int,
     requests: list[TestRequest],
-    timestamps: list[float],
+    intervals: list[float],
     output_descrip_str: str,
     verbose: bool
 ) -> list[ReqResult]:
@@ -54,12 +54,11 @@ async def run_some_requests(
 
     async def run_one_request(
         request: TestRequest,
-        timestamp: float
+        interval: float
     ) -> Optional[ReqResult]:
         """
         Issue one request on the given timestamp, and then return the ReqResult
         """
-        await asyncio.sleep(timestamp)
         issued_pbar.update(1)
         issued_pbar.refresh()
         request_func = backends.BACKEND_TO_REQUEST_FUNCS[backend]
@@ -84,9 +83,10 @@ async def run_some_requests(
             finished_pbar.refresh()
 
     tasks = []
-    for (request, timestamp) in zip(requests, timestamps):
-        task = asyncio.create_task(run_one_request(request, timestamp))
+    for (request, interval) in zip(requests, intervals):
+        task = asyncio.create_task(run_one_request(request, interval))
         tasks.append(task)
+        await asyncio.sleep(interval)
     
     await asyncio.gather(*tasks)
         
@@ -101,7 +101,6 @@ def benchmark_serving(
     backend: str,
     host: str, port: int,
     dataset: Dataset,
-    req_timestamps: list[float],
     num_prompts: int,
     request_rate: float,
     verbose: bool
@@ -109,59 +108,34 @@ def benchmark_serving(
     """
     Perform online serving benchmark under the given num_prompts and request_rate
     """
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    
     # Generate requests and timestamps
     if len(dataset.reqs) < num_prompts:
         print(f"Warning: dataset only has {len(dataset.reqs)} requests, but we are asked to process {num_prompts} prompts")
         while len(dataset.reqs) < num_prompts:
             dataset.reqs += dataset.reqs
-    if len(req_timestamps) < num_prompts:
-        print(f"Error: req_timestamps only has {len(req_timestamps)} requests, but we are asked to process {num_prompts} prompts")
-        sys.exit(1)
-    requests = dataset.reqs[:num_prompts]
-    timestamps = np.array(req_timestamps[:num_prompts])
-    # for req in requests:
-    #     print(req.prompt_len)
+    requests = random.sample(dataset.reqs, num_prompts)
 
-    # Scale timestamps to [0, num_prompts/request_rate]
-    timestamps -= timestamps[0]
-    timestamps *= (num_prompts/request_rate) / timestamps[-1]
-    timestamps = timestamps.tolist()
-
+    cv = 1
+    shape = 1 / (cv * cv)
+    scale = cv * cv / request_rate
+    intervals = np.random.gamma(shape, scale, size=num_prompts)
+            
     output_descrip_str = f"{backend}, {dataset.dataset_name}, ({num_prompts}, {request_rate})"
-    benchmark_result = asyncio.run(run_some_requests(backend, host, port, requests, timestamps, output_descrip_str, verbose))
+    benchmark_result = asyncio.run(run_some_requests(backend, host, port, requests, intervals, output_descrip_str, verbose))
     return benchmark_result
-
-
-def generate_poisson_process(num_data_points: int = 40000, lam: float = 1) -> list[float]:
-    """
-    Generate a list of timestamps that follows a Poisson process
-    """
-    result = []
-    t = 0
-    for _ in range(num_data_points):
-        t += np.random.exponential(1/lam)
-        result.append(t)
-    return result
 
 
 def main(args: argparse.Namespace):
     print(args)
-    random.seed(args.seed)
-    np.random.seed(args.seed)
 
     backend = args.backend
     port = args.port if args.port is not None else backends.BACKEND_TO_PORTS[backend]
 
     dataset = Dataset.load(args.dataset)
-    random.shuffle(dataset.reqs)
     print(f"Loaded dataset {dataset.dataset_name} ({len(dataset.reqs)} requests)")
-
-    if not args.uniform_distrib:
-        req_timestamps = generate_poisson_process()
-        print("Using Poisson distribution")
-    else:
-        req_timestamps = list(map(float, range(0, 100000)))
-        print("Using uniform distribution")
 
     # Complete missing fields in args
     meta = requests.get(f"http://{args.host}:{port+1}").json()
@@ -187,7 +161,6 @@ def main(args: argparse.Namespace):
             backend,
             args.host, port,
             dataset,
-            req_timestamps,
             num_prompts,
             request_rate,
             args.verbose
