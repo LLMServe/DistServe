@@ -27,7 +27,7 @@ class VLLMSUT(SystemUnderTest):
             pipeline_parallel_size = 1,
             tensor_parallel_size = worker_param.tp_world_size,
             max_num_seqs = worker_param.max_req_num,
-            gpu_memory_utilization=0.92,
+            gpu_memory_utilization=0.95,
             block_size = 16,
             max_num_batched_tokens = max(max_num_tokens+1, 4096),   # NOTE. vLLM will warn us if max_num_batched_tokens is smaller than the model's context length
             load_format = "auto" if not worker_param.use_dummy_weights else "dummy"

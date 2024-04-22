@@ -2,8 +2,12 @@
 
 This file will guide you through the process of reproducing the results of the paper "DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving".
 
+Since it is rediculously hard to rent a node with eight NVIDIA A100 80GB SXM GPUs, and (at least for us) impossible to rent three of them with Infiniband interconnect, we will provide a screencast for the OPT-175B end-to-end experiment (which needs three nodes).
+
+For the OPT-13B end-to-end experiment (which runs on 4 GPUs) and the OPT-66B experiment (which runs on 8 GPUs), we provide a python script for you to SHUA JI QI. Ideally it grabs a 4 GPU node in 10 minutes and an 8 GPU node in about 24 hours. We also provide corresponding screen recordings, if you find it annoying to SHUA JI QI.
+
 Here is a high level overview of the whole process:
-1. Create a docker container from our image as a GPU instance on RunPod (other cloud providers are also supported)
+1. Create a docker container instance (pod) from our image as a GPU instance on RunPod (other cloud providers are also supported)
 2. Run some toy examples to verify DistServe and two baselines (vLLM and DeepSpeed-MI) are working (for the kick-the-tires step)
 3. Run the full experiments
 4. Post-process the results and generate the figures
@@ -16,7 +20,7 @@ NOTE. To save your time, we've preprocessed the datasets and saved them to `/app
 
 *TODO human-minutes + TODO compute-minutes*
 
-(For kick-the-tire, 1 GPU is sufficient. For the full experiments, 8 GPUs are necessary.)
+(For kick-the-tire, 2 GPUs are sufficient, which can be easily obtained on RunPod)
 
 (Use the template called `distserve-evaluation`)
 

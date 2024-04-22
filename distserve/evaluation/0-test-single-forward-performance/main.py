@@ -47,7 +47,7 @@ def get_profiling_params() -> list[TestParamGroup]:
                 )
                 for (batch_size, input_len) in [
                     (batch_size, input_len)
-                    for batch_size in [1, 2, 4, 8, 16, 32, 64, 96, 128, 192]
+                    for batch_size in [1, 2, 4, 8, 16, 32, 64, 96, 128, 160, 192]
                     for input_len in [4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 284, 512, 768, 1024, 1536, 2020]
                     if batch_size * ((input_len+15)//16*16) <= num_tokens_limit
                 ]
@@ -60,6 +60,7 @@ def get_profiling_params() -> list[TestParamGroup]:
             ("facebook/opt-66b", 2, 8192),
             ("facebook/opt-66b", 3, 36864),
             ("facebook/opt-66b", 4, 65000),
+            ("intlsy/opt-175b-hyperparam", 8, 40000)
         ]
     ]
 def run_distserve(test_params: list[TestParamGroup], **kwargs):
@@ -88,7 +89,8 @@ if __name__ == "__main__":
     test_group_candidates = {
         "distserve-example": lambda : run_distserve(example_testing_params, warmup_rounds=1, measure_rounds=1, skip_duplicated=False, store_into_db=False),
         "distserve-profiling": lambda : run_distserve(get_profiling_params(), warmup_rounds=2, measure_rounds=3),
-        "vllm-example": lambda : run_vllm(example_testing_params, warmup_rounds=1, measure_rounds=1, skip_duplicated=False, store_into_db=False)
+        "vllm-example": lambda : run_vllm(example_testing_params, warmup_rounds=1, measure_rounds=1, skip_duplicated=False, store_into_db=False),
+        "vllm-profiling": lambda : run_vllm(get_profiling_params(), warmup_rounds=2, measure_rounds=3),
     }
     select_test_group = sys.argv[1]
     if select_test_group not in test_group_candidates:
