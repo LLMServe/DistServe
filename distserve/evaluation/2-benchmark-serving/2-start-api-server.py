@@ -53,19 +53,20 @@ python -u -m vllm.entrypoints.api_server \\
     --host 0.0.0.0 --port {port} \\
     --engine-use-ray --worker-use-ray --disable-log-requests \\
     --model {args.model} --dtype float16 \\
-    --max-paddings 524288 \\
+    --max-paddings 256 \\
     {"--load-format dummy" if use_dummy_weight else ""} \\
     -tp {tp_world_size} \\
     --block-size 16 --seed 0 \\
     --swap-space 16 \\
     --gpu-memory-utilization 0.95 \\
-    --max-num-batched-tokens 65536 \\
+    --max-num-batched-tokens 16384 \\
     --max-num-seqs 1024 \\
         """
 
     elif args.backend == "deepspeed":
         tp_world_size = MODEL_TO_PARALLEL_PARAMS[args.model]["deepspeed"]
-        assert not use_dummy_weight, "DeepSpeed does not support dummy weights, please remove `USE_DUMMY_WEIGHT` from the environment variables."
+        if use_dummy_weight:
+            print("WARNING: DeepSpeed does not support dummy weights, will use real weights.")
         script = f"""
 conda activate deepspeed-mii;
 set -u https_proxy; set -u http_proxy; set -u all_proxy;
