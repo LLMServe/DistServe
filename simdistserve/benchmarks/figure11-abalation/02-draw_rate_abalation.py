@@ -38,10 +38,10 @@ dfs = []
 namespaces = []
 for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment_log_paths):
     # read experiment_log_path and log the namespace
-    with open(experiment_log_path, 'r') as f:
-        exp_args = f.read()
-        exp_args = eval(exp_args)
-        namespaces.append(exp_args)
+    # with open(experiment_log_path, 'r') as f:
+    #     exp_args = f.read()
+    #     exp_args = eval(exp_args)
+    #     namespaces.append(exp_args)
 
     df = pd.read_csv(latency_file_path)
     dfs.append(df)
