@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Abalation study with DistServe and vLLM
-
+rm -rf result || true
 mkdir -p result
 # Production code for abalation study
 config_tpl="--tp-prefill {tp_prefill} --pp-prefill {pp_prefill} --tp-decode {tp_decode} --pp-decode {pp_decode}"
@@ -18,8 +18,7 @@ else
 fi
 
 
-#--total-gpu 32 \
-total_gpu=8
+total_gpu=32
 
 # Run experiment for DistServe
 client_cmdline="python3 ${exec_path} --backend distserve --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
