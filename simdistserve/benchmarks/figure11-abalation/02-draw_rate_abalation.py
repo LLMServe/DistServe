@@ -43,7 +43,10 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     #     exp_args = eval(exp_args)
     #     namespaces.append(exp_args)
 
-    df = pd.read_csv(latency_file_path)
+    try:
+        df = pd.read_csv(latency_file_path)
+    except pd.errors.EmptyDataError:
+        pass
     dfs.append(df)
 
 
