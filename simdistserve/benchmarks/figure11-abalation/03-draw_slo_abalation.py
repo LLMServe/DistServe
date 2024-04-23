@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[23]:
+# In[1]:
+
+
+is_notebook_mode = 'get_ipython' in globals()
+
+
+# In[2]:
 
 
 from pathlib import Path
@@ -9,7 +15,7 @@ Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
 
 
-# In[1]:
+# In[3]:
 
 
 import os
@@ -30,7 +36,7 @@ experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 
-# In[2]:
+# In[4]:
 
 
 dfs = []
@@ -46,7 +52,7 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     dfs.append(df)
 
 
-# In[3]:
+# In[5]:
 
 
 big_df = pd.concat(dfs, ignore_index=True)
@@ -61,13 +67,13 @@ chosen_per_gpu_rate = 4
 big_df = big_df[big_df['per_gpu_rate'] == chosen_per_gpu_rate]
 
 
-# In[4]:
+# In[6]:
 
 
 big_df
 
 
-# In[5]:
+# In[7]:
 
 
 slos = [0.4, 0.6, 0.8, 1, 1.2]
@@ -81,20 +87,20 @@ target_to_slo = {
 }
 
 
-# In[6]:
+# In[8]:
 
 
 big_df = big_df[big_df['target'].isin(targets)]
 big_df = big_df.copy()
 
 
-# In[7]:
+# In[9]:
 
 
 big_df['slo'] = big_df['target'].apply(lambda x: target_to_slo[x])
 
 
-# In[8]:
+# In[10]:
 
 
 max_machine = 4
@@ -127,19 +133,19 @@ def can_fit_low_affinity(x):
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
 
-# In[9]:
+# In[11]:
 
 
 big_df
 
 
-# In[10]:
+# In[12]:
 
 
 figure_11_right_df = big_df.copy()
 
 
-# In[11]:
+# In[13]:
 
 
 figure_11_distserve_high = figure_11_right_df[
@@ -156,7 +162,7 @@ figure_11_vllm_low = figure_11_right_df[
 ]
 
 
-# In[12]:
+# In[14]:
 
 
 def get_top_config(df):
@@ -173,13 +179,13 @@ def get_top_config(df):
     return r
 
 
-# In[13]:
+# In[15]:
 
 
 big_df = big_df.sort_values(by=['per_gpu_rate', 'slo', ], ascending=False)
 
 
-# In[14]:
+# In[16]:
 
 
 import plotly.graph_objects as go
@@ -212,11 +218,13 @@ fig.update_layout(
     xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
 )  # Set the range manually
 
-fig.show()
 # Export to html
+fig.write_html("visual/figure_11_distserve_high.slo.html")
+if is_notebook_mode:
+    fig.show()
 
 
-# In[15]:
+# In[17]:
 
 
 import plotly.graph_objects as go
@@ -248,11 +256,13 @@ fig.update_layout(
     xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
 )  # Set the range manually
 
-fig.show()
+fig.write_html("visual/figure_11_vllm_high.slo.html")
+if is_notebook_mode:
+    fig.show()
 # Export to html
 
 
-# In[16]:
+# In[18]:
 
 
 import plotly.graph_objects as go
@@ -299,12 +309,13 @@ fig.update_layout(
 fig.update_layout(
     xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
 )  # Set the range manually
-
-fig.show()
+fig.write_html("visual/figure_11_distserve_vllm_high.slo.html")
+if is_notebook_mode:
+    fig.show()
 # Export to html
 
 
-# In[17]:
+# In[19]:
 
 
 def get_top_config(df):
@@ -341,7 +352,7 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[18]:
+# In[20]:
 
 
 import plotly.graph_objects as go
@@ -361,11 +372,12 @@ fig.update_layout(
     xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
     legend_title="Configuration"
 )
-fig.show()
 fig.write_html("visual/figure_11b.html")
+if is_notebook_mode:
+    fig.show()
 
 
-# In[19]:
+# In[21]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -392,7 +404,7 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[20]:
+# In[22]:
 
 
 import matplotlib.pyplot as plt
@@ -415,5 +427,7 @@ plt.legend()
 
 # save the plot 
 fig.savefig("figure/figure_11b.png")
-plt.show()
+
+if is_notebook_mode:
+    plt.show()
 

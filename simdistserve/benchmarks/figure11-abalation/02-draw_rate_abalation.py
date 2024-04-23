@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[72]:
+
+
+is_notebook_mode = 'get_ipython' in globals()
+
+
+# In[73]:
 
 
 from pathlib import Path
@@ -9,7 +15,7 @@ Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
 
 
-# In[2]:
+# In[74]:
 
 
 from pathlib import Path
@@ -25,7 +31,7 @@ experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 
-# In[3]:
+# In[75]:
 
 
 dfs = []
@@ -41,7 +47,7 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     dfs.append(df)
 
 
-# In[4]:
+# In[76]:
 
 
 big_df = pd.concat(dfs, ignore_index=True)
@@ -53,13 +59,13 @@ big_df['goodput@90'] = big_df.apply(
 )
 
 
-# In[5]:
+# In[77]:
 
 
 big_df
 
 
-# In[6]:
+# In[78]:
 
 
 max_machine = 4
@@ -92,13 +98,13 @@ def can_fit_low_affinity(x):
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
 
-# In[7]:
+# In[79]:
 
 
 big_df.sort_values(by=['backend', 'per_gpu_rate', 'tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode'])
 
 
-# In[8]:
+# In[80]:
 
 
 target = '(200.0, 100.0)'
@@ -125,34 +131,41 @@ figure_11_vllm_high = figure_11_left_df[
 figure_11_vllm_low = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
     & (figure_11_left_df['pp_prefill'] == 1)
+    & (figure_11_left_df['tp_prefill'] == 1)
     ]
 
 
-# In[9]:
+# In[81]:
 
 
 figure_11_distserve_high
 
 
-# In[10]:
+# In[82]:
 
 
 figure_11_distserve_low
 
 
-# In[11]:
+# In[83]:
 
 
 figure_11_vllm_high
 
 
-# In[12]:
+# In[84]:
 
 
 figure_11_vllm_low
 
 
-# In[13]:
+# In[84]:
+
+
+
+
+
+# In[85]:
 
 
 # Plot the `figure_11_distserve_high`for some configurations
@@ -185,12 +198,13 @@ fig.update_layout(
     legend_title="Configuration"
 )
 
-fig.show()
 # Export to html
 fig.write_html("visual/figure_11_distserve_high.html")
+if is_notebook_mode:
+    fig.show()
 
 
-# In[14]:
+# In[86]:
 
 
 # Plot the `figure_11_vllm_high`for some configurations
@@ -221,12 +235,13 @@ fig.update_layout(
     yaxis_title="Attainment (%)",
     legend_title="Configuration"
 )
-fig.show()
 # Export to html
 fig.write_html("visual/figure_11_vllm_high.html")
+if is_notebook_mode:
+    fig.show()
 
 
-# In[15]:
+# In[87]:
 
 
 import plotly.graph_objects as go
@@ -279,11 +294,12 @@ fig.update_layout(
     yaxis_title="Attainment (%)",
     legend_title="Configuration"
 )
-fig.show()
 fig.write_html("visual/figure_11.full.html")
+if is_notebook_mode:
+    fig.show()
 
 
-# In[16]:
+# In[88]:
 
 
 # Find the best config that has the highest goodput@90 and attainment
@@ -321,7 +337,7 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[17]:
+# In[89]:
 
 
 import plotly.graph_objects as go
@@ -338,11 +354,12 @@ fig.update_layout(
     yaxis_title="Attainment (%)",
     legend_title="Configuration"
 )
-fig.show()
 fig.write_html("visual/figure_11.html")
+if is_notebook_mode:
+    fig.show()
 
 
-# In[18]:
+# In[90]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -366,7 +383,7 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[19]:
+# In[91]:
 
 
 import matplotlib.pyplot as plt
@@ -385,5 +402,6 @@ plt.xlabel("Per-GPU Rate (req/s)")
 plt.ylabel("SLO Attainment (%)")
 plt.legend()
 fig.savefig("figure/figure_11a.png")
-plt.show()
+if is_notebook_mode:
+    plt.show()
 
