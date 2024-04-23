@@ -19,13 +19,14 @@ fi
 
 
 #--total-gpu 32 \
+total_gpu=8
 
 # Run experiment for DistServe
 client_cmdline="python3 ${exec_path} --backend distserve --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
 file_prefix='result/simulate-distserve-{workload}-n{N}-r{rate}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}'
 python ../simulate_multi.py \
 --client-cmdline "$client_cmdline" \
---total-gpu 4 \
+--total-gpu $total_gpu \
 --per-gpu-rate '[1,2,3,4,5]' --workload '["sharegpt"]' \
 --tp-prefill "[1,2,4,8]" --pp-prefill "[1,2,4,8]" --tp-decode "[1,2,4,8]" --pp-decode "[1,2,4,8]" \
 --file-prefix $file_prefix --base-N "[100]"
@@ -37,7 +38,7 @@ client_cmdline="python3 ${exec_path} --backend vllm --N {N} --workload {workload
 file_prefix='result/simulate-vllm-{workload}-n{N}-r{rate}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}'
 python ../simulate_multi.py \
 --client-cmdline "$client_cmdline" \
---total-gpu 4 \
+--total-gpu $total_gpu \
 --per-gpu-rate '[1,2,3,4,5]' --workload '["sharegpt"]' \
 --tp-prefill "[1,2,4,8]" --pp-prefill "[1,2,4,8]" --tp-decode "[0]" --pp-decode "[0]" \
 --file-prefix $file_prefix --base-N "[100]"

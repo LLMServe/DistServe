@@ -185,9 +185,16 @@ class Worker:
         # decode_max_tokens
 
         # Acceptable decode requests is capped by the remaining allowed tokens in this batch.
+        decode_max_tokens = self.decode_max_tokens
         _decode_len = min(remaining_tok_in_batch, len(self.decode_queue))
         decode_reqs = []
         for i in range(_decode_len):
+            req = self.decode_queue[0]
+            # TODO: could be off by one (current_context_len + 1)
+            if (req.current_context_len + 1) > decode_max_tokens:
+                print(f"### Decode request is too big. Decode max token limit reached: {self.decode_max_tokens}.")
+                break
+            decode_max_tokens -= (req.current_context_len + 1)
             decode_reqs.append(self.decode_queue.popleft())
         for r in decode_reqs:
             r.do_decode(wid=self.wid)
@@ -250,6 +257,9 @@ class Worker:
                 result.append(self.prefill_queue.popleft())
                 pass
 
+        if self.prefill_queue:
+            print("### Prefill queue is not empty. Prefill max token limit reached.")
+            pass
         for i in result:
             i.do_prefill(wid=self.wid)
         return result
