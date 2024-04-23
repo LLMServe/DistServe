@@ -164,6 +164,7 @@ def main(args, outputs=None):
         prefill_max_tokens=prefill_max_tokens,
         decode_max_tokens=decode_max_tokens,
         enable_chunked_prefill=False,
+        engine_type=args.backend,
     )
     if args.backend == 'vllm':
         cluster = VLLMCluster(

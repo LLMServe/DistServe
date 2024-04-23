@@ -32,8 +32,14 @@ if __name__ == "__main__":
     )
     # --N
     parser.add_argument(
-        '--N', type=str, default='[16]',
+        '--N', type=str, default=None,
         help="List of number of prompts to run the experiment at, e.g. [1000]"
+    )
+    # --base-N
+    parser.add_argument(
+        '--base-N', type=str, default=None,
+        help="List of number base number of prompts to run the experiment. "
+             "N = base_N * rate"
     )
     # --dataset
     parser.add_argument(
@@ -76,7 +82,8 @@ if __name__ == "__main__":
     # Compose the actual running arguments
     template_cmdline = args.client_cmdline
     workloads: List[str] = eval(args.workload)
-    Ns: List[int] = eval(args.N)
+    Ns: List[int] = eval(args.N) if args.N else []
+    base_Ns: List[int] = eval(args.base_N)
     per_gpu_rates: List[float] = eval(args.per_gpu_rate)
     tp_prefills: List[int] = eval(args.tp_prefill)
     pp_prefills: List[int] = eval(args.pp_prefill)
@@ -88,7 +95,8 @@ if __name__ == "__main__":
     # Produce the actual cmds
     cmds = []
     for workload in workloads:
-        for N in Ns:
+        for base_N in base_Ns:
+        # for N in Ns:
             for tp_prefill, pp_prefill, tp_decode, pp_decode in product(
                 tp_prefills, pp_prefills, tp_decodes, pp_decodes
             ):
@@ -98,10 +106,12 @@ if __name__ == "__main__":
 
                 # TODO: Employ binary search if necessary
                 for per_gpu_rate in per_gpu_rates:
+                    rate = per_gpu_rate * ngpu
+                    N = base_N * rate
                     format_vals = dict(
                         N=N,
                         workload=workload,
-                        rate=per_gpu_rate * ngpu,
+                        rate=rate,
                         tp_prefill=tp_prefill,
                         pp_prefill=pp_prefill,
                         tp_decode=tp_decode,

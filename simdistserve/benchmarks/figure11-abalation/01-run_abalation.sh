@@ -17,15 +17,19 @@ else
     echo "Debug mode: printing all worker output"
 fi
 
+
+#--total-gpu 32 \
+
 # Run experiment for DistServe
 client_cmdline="python3 ${exec_path} --backend distserve --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
 file_prefix='result/simulate-distserve-{workload}-n{N}-r{rate}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}'
 python ../simulate_multi.py \
 --client-cmdline "$client_cmdline" \
---total-gpu 32 \
---per-gpu-rate '[1,2,3,4,5]' --workload '["sharegpt"]' --N "[1000]" \
+--total-gpu 4 \
+--per-gpu-rate '[1,2,3,4,5]' --workload '["sharegpt"]' \
 --tp-prefill "[1,2,4,8]" --pp-prefill "[1,2,4,8]" --tp-decode "[1,2,4,8]" --pp-decode "[1,2,4,8]" \
---file-prefix $file_prefix
+--file-prefix $file_prefix --base-N "[100]"
+
 
 # Run experiment for vLLM
 # Note: `--xp-decode 0` is set becuase vLLM only use `--xp-prefill` as parallelism setting in the script.
@@ -33,7 +37,7 @@ client_cmdline="python3 ${exec_path} --backend vllm --N {N} --workload {workload
 file_prefix='result/simulate-vllm-{workload}-n{N}-r{rate}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}'
 python ../simulate_multi.py \
 --client-cmdline "$client_cmdline" \
---total-gpu 32 \
---per-gpu-rate '[1,2,3,4,5]' --workload '["sharegpt"]' --N "[1000]" \
+--total-gpu 4 \
+--per-gpu-rate '[1,2,3,4,5]' --workload '["sharegpt"]' \
 --tp-prefill "[1,2,4,8]" --pp-prefill "[1,2,4,8]" --tp-decode "[0]" --pp-decode "[0]" \
---file-prefix $file_prefix
+--file-prefix $file_prefix --base-N "[100]"

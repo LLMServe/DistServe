@@ -4,7 +4,7 @@ Worker class for simulation. One worker class manages a TP group.
 import random
 import warnings
 from collections import deque
-from typing import Optional, List, Iterable, TYPE_CHECKING, Union, TypedDict
+from typing import Optional, List, Iterable, TYPE_CHECKING, Union, TypedDict, Literal
 from uuid import UUID
 
 from simdistserve.estimators.time_estimator import get_prefill_time, get_decode_time
@@ -25,6 +25,7 @@ class WorkerConfig(TypedDict):
     prefill_max_tokens: int  # Max tokens in prefill iteration (default = 10**7)
     decode_max_tokens: int  # Max tokens in a iteration forward (default = 10**7)
     enable_chunked_prefill: Optional[bool]  # Enable memory pressure simulation (default = False)
+    engine_type: Literal["distserve", "vllm"]  # Engine type for prefill/decode time calculation (default = "distserve")
 
     # TODO: Deprecated
     TP: Optional[int]  # Tensor parallelism (default = 1)
@@ -49,6 +50,7 @@ class Worker:
         prefill_max_tokens=10 ** 7,
         decode_max_tokens=10 ** 7,
         decode_back_pressure: float = 0.9,
+        engine_type: Literal["distserve", "vllm"] = "distserve",
     ):
         self.env = env
         self.cluster = cluster  # Refer to the cluster of init.
@@ -99,6 +101,7 @@ class Worker:
 
         # Simulate scheduler delay in terms of number of decode rounds.
         self._prefill_sched_delay: int = 0
+        self.engine_type = engine_type
         pass
 
     @property
@@ -306,6 +309,7 @@ class Worker:
             pp=self.cluster.PP_prefill,
             model_type=self.model_type, TP=self.TP_Prefill,
             prefill_len_list=[x.current_prefill_lens for x in prefill_items],
+            engine_type=self.engine_type,
             # __prefill_reqs=prefill_items,
             # __decode_reqs=decode_reqs,
         )
@@ -330,7 +334,8 @@ class Worker:
         _token_generated_list = [x.current_context_len + 1 for x in decode_reqs]
         delay = get_decode_time(batch_size, pp=self.cluster.PP_decode,
                                 model_type=self.model_type, TP=self.TP_Decode,
-                                token_generated_list=_token_generated_list)
+                                token_generated_list=_token_generated_list,
+                                engine_type=self.engine_type, )
         num_tokens = sum(x.current_context_len for x in decode_reqs)
         if self.is_first_in_pipeline:
             delay += self.add_ray_overhead(num_tokens)
