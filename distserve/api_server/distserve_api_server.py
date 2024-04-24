@@ -80,7 +80,7 @@ async def generate(request: Request) -> Response:
                 # Abort the request if the client disconnects.
                 await engine.abort(request_id)
                 return Response(status_code=499)
-            final_outputs.append((step_output, time.time()))
+            final_outputs.append((step_output, time.perf_counter()))
 
         request_events = engine.get_and_pop_request_lifetime_events(request_id)
         text_output = prompt + ''.join([step_output[0].new_token for step_output in final_outputs])

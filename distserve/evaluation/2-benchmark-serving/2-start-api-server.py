@@ -10,6 +10,11 @@ import multiprocessing
 from backends import BACKEND_TO_PORTS
 
 MODEL_TO_PARALLEL_PARAMS = {
+    "facebook/opt-125m": {
+        "vllm": 1,
+        "deepspeed": 1,
+        "distserve": (1, 1, 1, 1)
+    },
     "facebook/opt-1.3b": {
         "vllm": 1,
         "deepspeed": 1,
