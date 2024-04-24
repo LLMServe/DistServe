@@ -129,11 +129,15 @@ if __name__ == "__main__":
     for cmd, file_prefix in tqdm.tqdm(cmds):
         if len(procs) >= max_concurrent_procs:
             while True:
+                found = False
                 for p in procs:
                     if p.poll() is not None:
                         procs.remove(p)
+                        found = True
                         print(f"Killed process: {p}")
                         break
+                if found:
+                    break
                 time.sleep(0.5)
                 print("Waiting for a process to finish...")
 
