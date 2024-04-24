@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt/lists \
     sed -ri.bak -e 's/\/\/.*?(archive.ubuntu.com|mirrors.*?)\/ubuntu/\/\/mirrors.pku.edu.cn\/ubuntu/g' -e '/security.ubuntu.com\/ubuntu/d' /etc/apt/sources.list && \
     apt update && \
-    apt install -y --no-install-recommends git cmake build-essential openmpi-bin openmpi-common libopenmpi-dev curl libaio-dev
+    apt install -y --no-install-recommends git cmake build-essential openmpi-bin openmpi-common libopenmpi-dev libaio-dev curl
 
 # Install micromamba
 RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
@@ -46,7 +46,7 @@ COPY distserve/evaluation/vllm/requirements.txt /app/vllm-requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/micromamba/pkgs \
     eval "$(micromamba shell hook --shell bash)" && \
-    micromamba create -n vllm python==3.10 -c conda-forge && \
+    micromamba create -n vllm python=3.10 -c conda-forge && \
     micromamba activate vllm && \
     pip config --user set global.index-url https://mirrors.pku.edu.cn/pypi/web/simple && \
     pip install -r /app/vllm-requirements.txt && \
@@ -68,7 +68,7 @@ COPY distserve/evaluation/DeepSpeed-MII/requirements/requirements.txt /app/deeps
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/micromamba/pkgs \
     eval "$(micromamba shell hook --shell bash)" && \
-    micromamba create -n deepspeed-mii python==3.10 -c conda-forge && \
+    micromamba create -n deepspeed-mii python=3.10 -c conda-forge && \
     micromamba activate deepspeed-mii && \
     pip install -r /app/deepspeed-mii-requirements.txt && \
     rm -rf /app/deepspeed-mii-requirements.txt
