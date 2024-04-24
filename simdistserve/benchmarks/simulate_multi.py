@@ -124,14 +124,16 @@ if __name__ == "__main__":
                     pass
 
     # Run and wait for all subprocesses to finish
-    procs = deque()
+    procs = []
     max_concurrent_procs = os.cpu_count() - 1
     for cmd, file_prefix in tqdm.tqdm(cmds):
         if len(procs) >= max_concurrent_procs:
-            # wait for the first proc to finish
-            p = procs.popleft()
-            p.wait()
-            pass
+            while True:
+                for p in procs:
+                    if p.poll() is not None:
+                        procs.remove(p)
+                        break
+                time.sleep(0.5)
 
         fout = open(f"{file_prefix}.log", 'w')
         ferr = open(f"{file_prefix}.err", 'w')
