@@ -91,7 +91,9 @@ python ../simulate_multi.py \
 --file-prefix $file_prefix --base-N $base_N
 
 
+
 # Draw figure
+mkdir -p visual figure
 python 02-draw_rate_abalation.py --target "($prefill_target, $decode_target)"
 python 03-draw_slo_abalation.py --target "($prefill_target, $decode_target)" --per_gpu_rate $chosen_per_gpu_rate
 python 04-draw_abalation_curve.py
