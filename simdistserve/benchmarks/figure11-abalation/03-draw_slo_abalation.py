@@ -1,13 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[23]:
+# In[ ]:
 
 
+target = (200, 100)
+chosen_per_gpu_rate = 1
 is_notebook_mode = 'get_ipython' in globals()
 
+import argparse
+def parse_args(args_=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--target", type=str, default=target)
+    parser.add_argument("--per_gpu_rate", type=float, default=chosen_per_gpu_rate)
+    args = parser.parse_args(args_)
+    return args
 
-# In[24]:
+if not is_notebook_mode:
+    args = parse_args()
+    chosen_per_gpu_rate = args.per_gpu_rate
+    if args.target:
+        target = eval(args.target)
+
+
+# In[ ]:
 
 
 from pathlib import Path
@@ -15,7 +31,7 @@ Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
 
 
-# In[25]:
+# In[ ]:
 
 
 import os
@@ -36,7 +52,7 @@ experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 
-# In[26]:
+# In[ ]:
 
 
 dfs = []
@@ -55,7 +71,7 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     dfs.append(df)
 
 
-# In[27]:
+# In[ ]:
 
 
 big_df = pd.concat(dfs, ignore_index=True)
@@ -66,22 +82,21 @@ big_df['goodput@90'] = big_df.apply(
     axis=1,
 )
 big_df['target'] = big_df['target'].apply(eval)
-chosen_per_gpu_rate = 1
 big_df = big_df[big_df['per_gpu_rate'] == chosen_per_gpu_rate]
 
 
-# In[28]:
+# In[ ]:
 
 
 big_df
 
 
-# In[29]:
+# In[ ]:
 
 
 slos = [0.4, 0.6, 0.8, 1, 1.2]
 targets = [
-    (200 * slo, 100 * slo)
+    (target[0] * slo, target[1] * slo)
     for slo in slos
 ]
 target_to_slo = {
@@ -90,20 +105,20 @@ target_to_slo = {
 }
 
 
-# In[30]:
+# In[ ]:
 
 
 big_df = big_df[big_df['target'].isin(targets)]
 big_df = big_df.copy()
 
 
-# In[31]:
+# In[ ]:
 
 
 big_df['slo'] = big_df['target'].apply(lambda x: target_to_slo[x])
 
 
-# In[32]:
+# In[ ]:
 
 
 max_machine = 4
@@ -136,19 +151,19 @@ def can_fit_low_affinity(x):
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
 
-# In[33]:
+# In[ ]:
 
 
 big_df
 
 
-# In[34]:
+# In[ ]:
 
 
 figure_11_right_df = big_df.copy()
 
 
-# In[35]:
+# In[ ]:
 
 
 figure_11_distserve_high = figure_11_right_df[
@@ -165,7 +180,7 @@ figure_11_vllm_low = figure_11_right_df[
 ]
 
 
-# In[36]:
+# In[ ]:
 
 
 def get_top_config(df):
@@ -182,13 +197,13 @@ def get_top_config(df):
     return r
 
 
-# In[37]:
+# In[ ]:
 
 
 big_df = big_df.sort_values(by=['per_gpu_rate', 'slo', ], ascending=False)
 
 
-# In[38]:
+# In[ ]:
 
 
 import plotly.graph_objects as go
@@ -227,7 +242,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[39]:
+# In[ ]:
 
 
 import plotly.graph_objects as go
@@ -265,7 +280,7 @@ if is_notebook_mode:
 # Export to html
 
 
-# In[40]:
+# In[ ]:
 
 
 import plotly.graph_objects as go
@@ -318,7 +333,7 @@ if is_notebook_mode:
 # Export to html
 
 
-# In[41]:
+# In[ ]:
 
 
 def get_top_config(df):
@@ -355,7 +370,7 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[42]:
+# In[ ]:
 
 
 import plotly.graph_objects as go
@@ -380,7 +395,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[43]:
+# In[ ]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -406,7 +421,7 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
     return config_df['attainment'].tolist()
 
 
-# In[44]:
+# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -421,7 +436,7 @@ b = add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
 c = add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
 d = add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
 plt.title("Figure 11: Abalation Study (DistServe and vLLM)")
-plt.xlabel("Per-GPU Rate (req/s)")
+plt.xlabel("SLO Scale")
 plt.ylabel("SLO Attainment (%)")
 plt.xticks(slos)
 plt.gca().invert_xaxis()
@@ -434,7 +449,7 @@ if is_notebook_mode:
     plt.show()
 
 
-# In[45]:
+# In[ ]:
 
 
 data_points = {

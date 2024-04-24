@@ -107,7 +107,7 @@ if __name__ == "__main__":
                 # TODO: Employ binary search if necessary
                 for per_gpu_rate in per_gpu_rates:
                     rate = per_gpu_rate * ngpu
-                    N = base_N * rate
+                    N = base_N * ngpu
                     format_vals = dict(
                         N=N,
                         workload=workload,

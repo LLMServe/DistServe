@@ -9,10 +9,24 @@ ylabel = "SLO Attainment (%)"
 plt.rcParams.update({'font.size': fontsize})
 plt.figure(figsize=(10, 3))
 
+
+def parse_args():
+    import argparse
+    parser = argparse.ArgumentParser(description='Draw ablation curve')
+    # rates
+    parser.add_argument('--rates', type=str, default="[1,2,3,4,5]")
+    # SLO scales
+    parser.add_argument('--slo_scales', type=str, default="[0.4,0.6,0.8,1.0,1.2]")
+    return parser.parse_args()
+
+
+args = parse_args()
+rates = eval(args.rates)
+SLO_scales = eval(args.slo_scales)
+
 ## rate
 plt.subplot(1, 2, 1)
 xlabel = "Per-GPU Rate (req/s)"
-rates = [1, 2, 3, 4, 5]
 with open("figure/figure_11a.json") as f:
     data = json.load(f)
     distllm_optimal_SLO_att = data['dist++']
@@ -32,7 +46,6 @@ plt.ylabel(ylabel)
 ## SLO Scale
 plt.subplot(1, 2, 2)
 xlabel = "SLO Scale"
-SLO_scales = [i * 0.2 + 0.2 for i in ([1, 2, 3, 4, 5])]
 with open("figure/figure_11b.json") as f:
     data = json.load(f)
     distllm_optimal_SLO_att = data['dist++']
@@ -45,7 +58,7 @@ plt.plot(SLO_scales, distllm_real_SLO_att, label='DistLLM-Low', marker="o", mark
 plt.plot(SLO_scales, vllm_plus_SLO_att, label='vLLM++', marker="o", markersize=markersize)
 plt.plot(SLO_scales, vllm_SLO_att, label='vLLM', marker="o", markersize=markersize)
 plt.plot([SLO_scales[0], SLO_scales[-1]], [att_target, att_target], '--')
-plt.xticks(SLO_scales, [f"{i:.1f}" for i in SLO_scales])
+plt.xticks(SLO_scales, reversed([f"{i:.1f}" for i in SLO_scales]))
 plt.xlabel(xlabel)
 
 # plt.legend(frameon=False, bbox_to_anchor = (0.75, 1.3, 0, 0), ncol=2,
@@ -53,4 +66,5 @@ plt.xlabel(xlabel)
 
 plt.legend(frameon=False, bbox_to_anchor=(0.95, 1.1, 0, 0), ncol=4,
            bbox_transform=plt.gcf().transFigure, columnspacing=1)
+plt.savefig("figure/ablation.png", bbox_inches="tight")
 plt.savefig("figure/ablation.pdf", bbox_inches="tight")
