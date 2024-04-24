@@ -63,9 +63,9 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
 
     try:
         df = pd.read_csv(latency_file_path)
+        dfs.append(df)
     except pd.errors.EmptyDataError:
         pass
-    dfs.append(df)
 
 
 # In[ ]:
