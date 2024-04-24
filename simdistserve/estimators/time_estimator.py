@@ -28,14 +28,14 @@ def get_prefill_time(num_tokens=None, pp=1, bs=1, decode_bs=0, model_type=ModelT
     if engine_type == "distserve":
         params = distserve_profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]
         a, b, c = params["prefill"]
+        f = 1.05  # Fudge factor of other overhead in the `step` function
     else:
         params = vllm_profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]
         a, b, c = params["prefill"]
-        f = 1
-        a, b, c = (a * f, b * f, c * f)
+        f = 1.2  # Fudge factor of other overhead in the `step` function, especially ray overhead
+    a, b, c = (a * f, b * f, c * f)
     pp_factor = 1 / pp
-    # pp_const = 1 * pp  # TODO: Modulate the PP overhead
-    pp_const = 0
+    pp_const = 1 * pp  # TODO: Modulate the PP overhead
     num_total_tokens = sum(prefill_len_list)
     sum_num_tokens_sqr = sum([x ** 2 for x in prefill_len_list])
     delay = a + b * num_total_tokens + c * sum_num_tokens_sqr

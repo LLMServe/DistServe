@@ -12,7 +12,7 @@ if [ $workloads == "opt_13b_sharegpt" ]; then
     model="opt_13b"
     prefill_target=200
     decode_target=100
-    chosen_per_gpu_rate=1
+    chosen_per_gpu_rate=2
 elif [ $workloads == "opt_66b_sharegpt" ]; then
     total_gpu=8
     per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
