@@ -134,12 +134,10 @@ if __name__ == "__main__":
                     if p.poll() is not None:
                         procs.remove(p)
                         found = True
-                        print(f"Killed process: {p}")
                         break
                 if found:
                     break
-                time.sleep(0.5)
-                print("Waiting for a process to finish...")
+                time.sleep(0.1)
 
         fout = open(f"{file_prefix}.log", 'w')
         ferr = open(f"{file_prefix}.err", 'w')
