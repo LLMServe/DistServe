@@ -101,11 +101,11 @@ Ideally it should generate a file `/workspace/exp-results/opt-1.3b-sharegpt/dist
 
 ## Full Evaluation
 
-### End-to-end Experiments (Section 6.2, Figure. 8 + Figure 9)
+### End-to-end Experiments (Section 6.2, Figure. 8 + Figure. 9)
 
-The OPT-175B experiment of DistLLM requires four DGX-A100 nodes, each with eight A100 GPUs. On common cloud providers like AWS or Runpod, this experiment costs over 100$/h and over 2000$ in total. Also, due to the shortage of GPU resources recently, it takes 1-2 days to grab one DGX-A100 node with automatic script (which we will provide you), So it is too expensive for us to reproduce this experiment. so for reviewers who do not want to experience this tedious machine-grabing process, we provide the screencast of producing. 
+The OPT-175B experiment of DistLLM requires four 8xA100-SXM-80GB machines. On common cloud providers like AWS or Runpod, this experiment costs over 2000$ in total for each run. So it is too expensive for us to reproduce the OPT-175B experiment (Figure. 8c) and we use the data in our paper during figure plotting. But we provide the scripts for interested ones who have enough resources to produce the results by themselves.
 
-Since it is rediculously hard to rent even a single node with eight NVIDIA A100 80GB SXM GPUs recently on common cloud providers (like AWS and Runpod), so we provide the screencast of producing and (at least for us) impossible to rent three of them with Infiniband interconnect, we will provide a screencast for the OPT-175B end-to-end experiment (which needs three nodes).**
+The other experiments require one 8xA100-SXM-80GB machine. However, due to the shortage of 8xA100-SXM-80GB machines recently, it takes 1-2 days to grab even a single machine with automatic script (which we will provide you). So for reviewers who do not want to experience this tedious machine-grabing process, we provide the [screencast]() of producing the results in each figure. 
 
 ### Latency Breakdown (Section 6.3, Figure. 10) 
 TODO
