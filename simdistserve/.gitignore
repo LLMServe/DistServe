@@ -1,5 +1,6 @@
 data
 scratch
 arxiv-data
-/benchmarks/alignment/alignment-output/
-/benchmarks/figure11-abalation/visual/
+alignment-output
+visual
+figure
