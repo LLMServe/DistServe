@@ -10,6 +10,7 @@ import numpy as np
 from transformers import PreTrainedTokenizerBase, AutoTokenizer
 
 from distserve.simulator.utils import TestRequest, Dataset
+# from lib.structs import TestRequest, Dataset
 
 def read_dataset(
     dataset_path: str,

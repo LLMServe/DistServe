@@ -1,253 +1,307 @@
+"""Benchmark online serving throughput.
 """
-The client during serving performance benchmarking
-"""
-import sys, os
 import argparse
-import time
-import random
 import asyncio
-import requests
-from typing import Optional
-from tqdm.asyncio import tqdm
+import json
+import random
+import time
+import histoprint
+from typing import AsyncGenerator, List, Tuple, Optional
+import os
+import pandas as pd
+import _pickle as pickle
 
+import aiohttp
 import numpy as np
+from transformers import PreTrainedTokenizerBase
+from tqdm import tqdm
 
-# From https://stackoverflow.com/a/287944/16569836
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    
-from distserve.simulator.utils import TestRequest, Dataset, ReqResult, dump_req_result_list
-from metrics import BenchmarkMetrics
-import backends
+from lib.structs import TestRequest, Dataset, RequestResult
 
-async def run_some_requests(
-    backend: str,
-    host: str, port: int,
-    requests: list[TestRequest],
-    intervals: list[float],
-    output_descrip_str: str,
-    verbose: bool
-) -> list[ReqResult]:
+pbar: Optional[tqdm] = None
+
+def sample_requests(dataset_path: str, num_prompts: int) -> List[TestRequest]:
     """
-    Issue a bunch of requests on their corresponding timestamps, and return the ReqResults
+    sample_requests: Sample the given number of requests from the dataset.
     """
+    dataset = Dataset.load(dataset_path)
+    if num_prompts > len(dataset.data):
+        raise ValueError(
+            f"Number of prompts ({num_prompts}) is larger than the dataset size ({len(dataset.data)})."
+        )
+    return random.sample(dataset.data, num_prompts)
 
-    pbar_args = {
-        "ncols": 90,
-        "smoothing": 0.05,
-    }
-    issued_pbar = tqdm(total=len(requests), desc="Iss", colour="#aaeebb", **pbar_args)
-    first_token_generated_pbar = tqdm(total=len(requests), desc="TFT", colour="#ffffff", **pbar_args)
-    finished_pbar = tqdm(total=len(requests), desc="Fin", colour="#66ccff", **pbar_args)
-    
-    outputs = []
-    last_print_outputs_len = 0
-    last_print_time = time.time()
 
-    async def run_one_request(
-        request: TestRequest,
-        interval: float
-    ) -> Optional[ReqResult]:
-        """
-        Issue one request on the given timestamp, and then return the ReqResult
-        """
-        issued_pbar.update(1)
-        issued_pbar.refresh()
-        request_func = backends.BACKEND_TO_REQUEST_FUNCS[backend]
-        output = await request_func(host, port, request, first_token_generated_pbar, finished_pbar, verbose)
+async def get_request(
+    input_requests: List[TestRequest],
+    process_name: str = "possion",
+    request_rate: float = 1.0,
+    cv: float = 1.0,
+) -> AsyncGenerator[TestRequest, None]:
+    interval_lens = len(input_requests)
+    input_requests = iter(input_requests)
 
-        if output is None:
-            return
-        outputs.append(output)
-        nonlocal last_print_outputs_len
-        nonlocal last_print_time
-        if len(outputs)-last_print_outputs_len > len(requests)*0.1 or \
-            time.time() - last_print_time > 60:
-            last_print_outputs_len = len(outputs)
-            last_print_time = time.time()
-            part_metrics = BenchmarkMetrics.from_req_results(outputs)
-            print(f"\n\n\n{output_descrip_str}")
-            print(f"TFT Gap: {issued_pbar.n - first_token_generated_pbar.n}")
-            print(f"FIN Gap: {issued_pbar.n - finished_pbar.n}")
-            print(part_metrics)
-            issued_pbar.refresh()
-            first_token_generated_pbar.refresh()
-            finished_pbar.refresh()
+    if request_rate not in [float("inf"), 0.0]:
+        if process_name == "uniform":
+            intervals = [1.0 / request_rate for _ in range(interval_lens)]
+        elif process_name == "gamma":
+            shape = 1 / (cv * cv)
+            scale = cv * cv / request_rate
+            intervals = np.random.gamma(shape, scale, size=interval_lens)
+        elif process_name == "possion":
+            cv = 1
+            shape = 1 / (cv * cv)
+            scale = cv * cv / request_rate
+            intervals = np.random.gamma(shape, scale, size=interval_lens)
+        else:
+            raise ValueError(
+                f"Unsupported prosess name: {process_name}, we currently support uniform, gamma and possion."
+            )
+    for idx, request in enumerate(input_requests):
+        yield request
+        if request_rate == float("inf") or request_rate == 0.0:
+            continue
 
-    tasks = []
-    for (request, interval) in zip(requests, intervals):
-        task = asyncio.create_task(run_one_request(request, interval))
-        tasks.append(task)
+        interval = intervals[idx]
+        # The next request will be sent after the interval.
         await asyncio.sleep(interval)
-    
-    await asyncio.gather(*tasks)
-        
-    outputs = [x for x in outputs if x is not None]
-    issued_pbar.close()
-    first_token_generated_pbar.close()
-    finished_pbar.close()
-    return outputs
 
 
-def benchmark_serving(
+async def send_request(
     backend: str,
-    host: str, port: int,
-    dataset: Dataset,
-    num_prompts: int,
-    request_rate: float,
-    verbose: bool
-) -> list[ReqResult]:
-    """
-    Perform online serving benchmark under the given num_prompts and request_rate
-    """
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    
-    # Generate requests and timestamps
-    if len(dataset.reqs) < num_prompts:
-        print(f"Warning: dataset only has {len(dataset.reqs)} requests, but we are asked to process {num_prompts} prompts")
-        while len(dataset.reqs) < num_prompts:
-            dataset.reqs += dataset.reqs
-    requests = random.sample(dataset.reqs, num_prompts)
+    api_url: str,
+    prompt: str,
+    prompt_len: int,
+    output_len: int,
+    best_of: int,
+    use_beam_search: bool,
+) -> RequestResult:
+    headers = {"User-Agent": "Benchmark Client"}
+    if backend == "disstserve" or backend == "vllm" or backend == "fastertransformer":
+        pload = {
+            "prompt": prompt,
+            "n": 1,
+            "best_of": best_of,
+            "use_beam_search": use_beam_search,
+            "temperature": 0.0 if use_beam_search else 1.0,
+            "top_p": 1.0,
+            "max_tokens": output_len,
+            "ignore_eos": True,
+            "stream": False,
+        }
+    elif backend == "tgi":
+        assert not use_beam_search
+        params = {
+            "best_of": best_of,
+            "max_new_tokens": output_len,
+            "do_sample": True,
+        }
+        pload = {
+            "inputs": prompt,
+            "parameters": params,
+        }
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
 
-    cv = 1
-    shape = 1 / (cv * cv)
-    scale = cv * cv / request_rate
-    intervals = np.random.gamma(shape, scale, size=num_prompts)
-            
-    output_descrip_str = f"{backend}, {dataset.dataset_name}, ({num_prompts}, {request_rate})"
-    benchmark_result = asyncio.run(run_some_requests(backend, host, port, requests, intervals, output_descrip_str, verbose))
-    return benchmark_result
+    # The maximum length of the input is 2048, limited by the embedding
+    # table size.
+    assert prompt_len+output_len < 2048
+    
+    request_start_time = time.time()
+    request_output = None
+
+    timeout = aiohttp.ClientTimeout(total=3 * 3600)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        while True:
+            async with session.post(api_url, headers=headers, json=pload) as response:
+                chunks = []
+                async for chunk, _ in response.content.iter_chunks():
+                    chunks.append(chunk)
+            output = b"".join(chunks).decode("utf-8")
+            try:
+                output = json.loads(output)
+            except:
+                print("Failed to parse the response:")
+                print(output)
+                continue
+
+            # Re-send the request if it failed.
+            if "error" not in output:
+                request_output = output
+                break
+            else:
+                print(f"Failed to process the request: {output['error']}")
+                print(f"Resending the request: {pload}")
+
+    request_end_time = time.time()
+    
+    global pbar
+    pbar.update(1)
+    
+    return RequestResult(
+        prompt_len,
+        output_len,
+        request_start_time,
+        request_end_time,
+        token_timestamps=request_output["timestamps"],
+        lifetime_events=request_output.get("lifetime_events", None)
+    )
+
+
+async def benchmark(
+    backend: str,
+    api_url: str,
+    input_requests: List[TestRequest],
+    best_of: int,
+    use_beam_search: bool,
+    request_rate: float,
+    request_cv: float = 1.0,
+    process_name: str = "possion",
+) -> List[RequestResult]:
+    tasks: List[asyncio.Task] = []
+    async for request in get_request(
+        input_requests, process_name, request_rate, request_cv
+    ):
+        task = asyncio.create_task(
+            send_request(
+                backend,
+                api_url,
+                request.prompt,
+                request.prompt_len,
+                request.output_len,
+                best_of,
+                use_beam_search,
+            )
+        )
+        tasks.append(task)
+    request_results = await asyncio.gather(*tasks)
+    return request_results
 
 
 def main(args: argparse.Namespace):
     print(args)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
 
-    backend = args.backend
-    port = args.port if args.port is not None else backends.BACKEND_TO_PORTS[backend]
+    api_url = f"http://{args.host}:{args.port}/generate"
+    input_requests = sample_requests(
+        args.dataset, args.num_prompts
+    )
+    print("Sampling done. Start benchmarking...")
 
-    dataset = Dataset.load(args.dataset)
-    print(f"Loaded dataset {dataset.dataset_name} ({len(dataset.reqs)} requests)")
-
-    # Complete missing fields in args
-    meta = requests.get(f"http://{args.host}:{port+1}").json()
-    print(meta)
-    if meta["backend"] != backend:
-        print(f"{bcolors.FAIL}Error: The metadata server is running on backend {meta.backend}, but we are benchmarking on backend {backend}{bcolors.ENDC}")
-        sys.exit(1)
-    if args.exp_result_root == None:
-        if "EXP_RESULT_ROOT" not in os.environ:
-            print(f"{bcolors.FAIL}Error: EXP_RESULT_ROOT is not set in environment variables{bcolors.ENDC}")
-            sys.exit(1)
-        args.exp_result_root = os.getenv("EXP_RESULT_ROOT")
-    if args.exp_result_dir == None:
-        args.exp_result_dir = ('-'.join(meta["model"].split('/')[1:])) + '-' + dataset.dataset_name
-    if args.exp_result_prefix == None:
-        args.exp_result_prefix = backend
-        
-    num_prompts_and_request_rates = eval(args.num_prompts_req_rates)
-    for (num_prompts, request_rate) in num_prompts_and_request_rates:
-        print(f"{bcolors.OKGREEN}==============================================={bcolors.ENDC}")
-        print(f"{bcolors.OKGREEN}Running on {num_prompts=} {request_rate=}{bcolors.ENDC}")
-        result = benchmark_serving(
-            backend,
-            args.host, port,
-            dataset,
-            num_prompts,
-            request_rate,
-            args.verbose
+    global pbar
+    pbar = tqdm(total=args.num_prompts)
+    benchmark_start_time = time.time()
+    request_results = asyncio.run(
+        benchmark(
+            args.backend,
+            api_url,
+            input_requests,
+            args.best_of,
+            args.use_beam_search,
+            args.request_rate,
+            args.request_cv,
+            args.process_name,
         )
-        metrics = BenchmarkMetrics.from_req_results(result)
-        print(metrics)
-        if not args.dont_save:
-            exp_result_filename = f"{args.exp_result_prefix}-{num_prompts}-{request_rate}"
-            if args.uniform_distrib:
-                exp_result_filename += "-uniform"
-            exp_result_filename += ".exp"
+    )
+    benchmark_end_time = time.time()
+    pbar.close()
+    
+    benchmark_time = benchmark_end_time - benchmark_start_time
+    print(f"Total time: {benchmark_time:.2f} s")
+    print(f"Throughput:")
+    print(f"\t{args.num_prompts / benchmark_time:.2f} requests/s")
+    print(f"\t{sum([req.prompt_len + req.output_len for req in input_requests]) / benchmark_time:.2f} tokens/s")
+    print(f"\t{sum([req.output_len for req in input_requests]) / benchmark_time:.2f} output tokens/s")
+    
+    agreements = [0.85, 0.9, 0.95, 0.98]
+    print("Distribution of first token latency:")
+    first_token_latencies = [req.ftl for req in request_results]
+    histoprint.print_hist(
+        np.histogram(
+            np.array(first_token_latencies),
+            bins = 20,
+            range = (min(first_token_latencies), max(first_token_latencies))
+        ),
+        bg_colors="c",
+    )
+    for agreement in agreements:
+        print(f"\t{agreement*100:.0f}%: {np.quantile(first_token_latencies, agreement)} s") 
+    print()
 
-            exp_result_dir = os.path.join(args.exp_result_root, args.exp_result_dir)
-            os.makedirs(exp_result_dir, exist_ok=True)
-            exp_result_path = os.path.join(exp_result_dir, exp_result_filename)
+    print("Distribution of TPOT:")
+    decoding_tpots = [req.tpot for req in request_results]
+    histoprint.print_hist(
+        np.histogram(
+            np.array(decoding_tpots),
+            bins = 20,
+            range = (min(decoding_tpots), max(decoding_tpots))
+        ),
+        bg_colors="c",
+    )
+    for agreement in agreements:
+        print(f"\t{agreement*100:.0f}%: {np.quantile(decoding_tpots, agreement)} s")
 
-            dump_req_result_list(result, exp_result_path)
-        time.sleep(2)
+    with open(args.output, "w") as f:
+        json.dump(request_results, f, default=vars)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--backend",
-        type=str,
-        required=True,
-        choices=list(backends.BACKEND_TO_REQUEST_FUNCS.keys()),
+    parser = argparse.ArgumentParser(
+        description="Benchmark the online serving throughput."
     )
     parser.add_argument(
-        "--host",
-        type=str,
-        default="localhost"
+        "--backend", type=str, default="distserve", choices=["distserve", "vllm", "tgi", "fastertransformer"]
+    )
+    parser.add_argument("--host", type=str, default="localhost")
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument(
+        "--dataset", type=str, required=True, help="Path to the (preprocessed) dataset."
     )
     parser.add_argument(
-        "--port",
+        "--best-of",
         type=int,
-        default=None
+        default=1,
+        help="Generates `best_of` sequences per prompt and " "returns the best one.",
+    )
+    parser.add_argument("--use-beam-search", action="store_true")
+    parser.add_argument(
+        "--num-prompts", type=int, default=1000, help="Number of prompts to process."
     )
     parser.add_argument(
-        "--dataset",
+        "--request-rate",
+        type=float,
+        default=float("inf"),
+        help="Number of requests per second. If this is inf, "
+        "then all the requests are sent at time 0. "
+        "Otherwise, we use Poisson process to synthesize "
+        "the request arrival times.",
+    )
+    parser.add_argument(
+        "--request-cv",
+        type=float,
+        default=1.0,
+        help="the coefficient of variation of the gap between" "the requests.",
+    )
+    parser.add_argument(
+        "--process-name",
         type=str,
-        required=True
-    )
-    parser.add_argument(
-        "--num-prompts-req-rates",
-        type=str,
-        required=True,
-        help="[(num_prompts, request_rate), ...] where num_prompts is the number of prompts to process and request_rate is the number of requests per second.",
-    )
-    parser.add_argument(
-        "--dont-save",
-        action="store_true",
-        help="If this flag is set, then we won't save the benchmark results to disk",
-    )
-    parser.add_argument(
-        "--exp-result-root",
-        type=str,
-        default=None,
-        help="Experiment result will be stored under folder <exp-result-root>/<exp-result-dir> (default: env var EXP_RESULT_ROOT)"
-    )
-    parser.add_argument(
-        "--exp-result-dir",
-        type=str,
-        default=None,
-        help="Experiment result will be stored under folder <exp-result-root>/<exp-result-dir> (default: <model_name>-<dataset.name>)"
-    )
-    parser.add_argument(
-        "--exp-result-prefix",
-        type=str,
-        default=None,
-        help="Exp result file will be named as <exp-result-prefix>-<num-prompts>-<req-rate>.exp (default: <backend>)"
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=0
-    )
-    parser.add_argument(
-        "--uniform-distrib",
-        action="store_true",
-        help="Use uniform distribution instead of Poisson"
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Print prompts & completions"
+        default="possion",
+        choices=["possion", "gamma", "uniform"],
     )
 
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--trust-remote-code",
+        action="store_true",
+        help="trust remote code from huggingface",
+    )
+    
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="The path to the output file that stores the benchmark results."
+    )
+    
     args = parser.parse_args()
-
+    
     main(args)
