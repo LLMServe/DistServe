@@ -32,7 +32,7 @@ class Dataset:
         loaded_data = marshal.load(open(input_path, "rb"))
         return Dataset(
             loaded_data["dataset_name"],
-            [TestRequest(req[0], req[1], req[2]) for req in loaded_data["data"]]
+            [TestRequest(req[0], req[1], req[2]) for req in loaded_data["reqs"]]
         )
         
 import dataclasses

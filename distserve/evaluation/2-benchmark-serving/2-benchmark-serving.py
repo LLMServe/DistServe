@@ -5,18 +5,16 @@ import asyncio
 import json
 import random
 import time
-import histoprint
-from typing import AsyncGenerator, List, Tuple, Optional
+from typing import AsyncGenerator, List, Optional
 import os
-import pandas as pd
-import _pickle as pickle
+import sys
 
 import aiohttp
 import numpy as np
-from transformers import PreTrainedTokenizerBase
 from tqdm import tqdm
 
-from lib.structs import TestRequest, Dataset, RequestResult
+from structs import TestRequest, Dataset, RequestResult
+from backends import BACKEND_TO_PORTS
 
 pbar: Optional[tqdm] = None
 
@@ -76,76 +74,103 @@ async def send_request(
     best_of: int,
     use_beam_search: bool,
 ) -> RequestResult:
-    headers = {"User-Agent": "Benchmark Client"}
-    if backend == "disstserve" or backend == "vllm" or backend == "fastertransformer":
-        pload = {
-            "prompt": prompt,
-            "n": 1,
-            "best_of": best_of,
-            "use_beam_search": use_beam_search,
-            "temperature": 0.0 if use_beam_search else 1.0,
-            "top_p": 1.0,
-            "max_tokens": output_len,
-            "ignore_eos": True,
-            "stream": False,
-        }
-    elif backend == "tgi":
-        assert not use_beam_search
-        params = {
-            "best_of": best_of,
-            "max_new_tokens": output_len,
-            "do_sample": True,
-        }
-        pload = {
-            "inputs": prompt,
-            "parameters": params,
-        }
-    else:
-        raise ValueError(f"Unknown backend: {backend}")
-
-    # The maximum length of the input is 2048, limited by the embedding
-    # table size.
-    assert prompt_len+output_len < 2048
-    
-    request_start_time = time.time()
-    request_output = None
-
-    timeout = aiohttp.ClientTimeout(total=3 * 3600)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        while True:
-            async with session.post(api_url, headers=headers, json=pload) as response:
-                chunks = []
-                async for chunk, _ in response.content.iter_chunks():
-                    chunks.append(chunk)
-            output = b"".join(chunks).decode("utf-8")
-            try:
-                output = json.loads(output)
-            except:
-                print("Failed to parse the response:")
-                print(output)
-                continue
-
-            # Re-send the request if it failed.
-            if "error" not in output:
-                request_output = output
-                break
-            else:
-                print(f"Failed to process the request: {output['error']}")
-                print(f"Resending the request: {pload}")
-
-    request_end_time = time.time()
-    
     global pbar
-    pbar.update(1)
-    
-    return RequestResult(
-        prompt_len,
-        output_len,
-        request_start_time,
-        request_end_time,
-        token_timestamps=request_output["timestamps"],
-        lifetime_events=request_output.get("lifetime_events", None)
-    )
+    if backend == "deepspeed":
+        payload = {
+            "prompt": prompt,
+            "max_tokens": output_len,
+            "min_new_tokens": output_len,
+            "max_new_tokens": output_len,
+            "stream": True,
+            "max_length": int((prompt_len + output_len)*1.2+10) # *1.2 to prevent tokenization error
+        }
+        
+        request_start_time = time.perf_counter()
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=3*3600)) as session:
+            token_timestamps = []
+            try:
+                async with session.post(url=api_url, json=payload) as response:
+                    if response.status == 200:
+                        async for data in response.content.iter_any():
+                            token_timestamps.append(time.perf_counter())
+                        complete_time = time.perf_counter()
+                    else:
+                        print(response)
+                        print(response.status)
+                        print(response.reason)
+                        sys.exit(1)
+            except (aiohttp.ClientOSError, aiohttp.ServerDisconnectedError) as e:
+                print(e)
+                sys.exit(1)
+        request_end_time = time.perf_counter()
+        
+        pbar.update(1)
+        return RequestResult(
+            prompt_len,
+            output_len,
+            request_start_time,
+            request_end_time,
+            token_timestamps=token_timestamps,
+            lifetime_events=None
+        )
+    else:
+        headers = {"User-Agent": "Benchmark Client"}
+        if backend == "distserve" or backend == "vllm":
+            pload = {
+                "prompt": prompt,
+                "n": 1,
+                "best_of": best_of,
+                "use_beam_search": use_beam_search,
+                "temperature": 0.0 if use_beam_search else 1.0,
+                "top_p": 1.0,
+                "max_tokens": output_len,
+                "ignore_eos": True,
+                "stream": False,
+            }
+        else:
+            raise ValueError(f"Unknown backend: {backend}")
+
+        # The maximum length of the input is 2048, limited by the embedding
+        # table size.
+        assert prompt_len+output_len < 2048
+        
+        request_start_time = time.perf_counter()
+        request_output = None
+
+        timeout = aiohttp.ClientTimeout(total=3 * 3600)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            while True:
+                async with session.post(api_url, headers=headers, json=pload) as response:
+                    chunks = []
+                    async for chunk, _ in response.content.iter_chunks():
+                        chunks.append(chunk)
+                output = b"".join(chunks).decode("utf-8")
+                try:
+                    output = json.loads(output)
+                except:
+                    print("Failed to parse the response:")
+                    print(output)
+                    continue
+
+                # Re-send the request if it failed.
+                if "error" not in output:
+                    request_output = output
+                    break
+                else:
+                    print(f"Failed to process the request: {output['error']}")
+                    print(f"Resending the request: {pload}")
+
+        request_end_time = time.perf_counter()
+        
+        pbar.update(1)        
+        return RequestResult(
+            prompt_len,
+            output_len,
+            request_start_time,
+            request_end_time,
+            token_timestamps=request_output["timestamps"],
+            lifetime_events=request_output.get("lifetime_events", None)
+        )
 
 
 async def benchmark(
@@ -213,34 +238,6 @@ def main(args: argparse.Namespace):
     print(f"\t{args.num_prompts / benchmark_time:.2f} requests/s")
     print(f"\t{sum([req.prompt_len + req.output_len for req in input_requests]) / benchmark_time:.2f} tokens/s")
     print(f"\t{sum([req.output_len for req in input_requests]) / benchmark_time:.2f} output tokens/s")
-    
-    agreements = [0.85, 0.9, 0.95, 0.98]
-    print("Distribution of first token latency:")
-    first_token_latencies = [req.ftl for req in request_results]
-    histoprint.print_hist(
-        np.histogram(
-            np.array(first_token_latencies),
-            bins = 20,
-            range = (min(first_token_latencies), max(first_token_latencies))
-        ),
-        bg_colors="c",
-    )
-    for agreement in agreements:
-        print(f"\t{agreement*100:.0f}%: {np.quantile(first_token_latencies, agreement)} s") 
-    print()
-
-    print("Distribution of TPOT:")
-    decoding_tpots = [req.tpot for req in request_results]
-    histoprint.print_hist(
-        np.histogram(
-            np.array(decoding_tpots),
-            bins = 20,
-            range = (min(decoding_tpots), max(decoding_tpots))
-        ),
-        bg_colors="c",
-    )
-    for agreement in agreements:
-        print(f"\t{agreement*100:.0f}%: {np.quantile(decoding_tpots, agreement)} s")
 
     with open(args.output, "w") as f:
         json.dump(request_results, f, default=vars)
@@ -250,10 +247,10 @@ if __name__ == "__main__":
         description="Benchmark the online serving throughput."
     )
     parser.add_argument(
-        "--backend", type=str, default="distserve", choices=["distserve", "vllm", "tgi", "fastertransformer"]
+        "--backend", type=str, default="distserve", choices=["distserve", "vllm", "deepspeed"]
     )
     parser.add_argument("--host", type=str, default="localhost")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=None)
     parser.add_argument(
         "--dataset", type=str, required=True, help="Path to the (preprocessed) dataset."
     )
@@ -265,16 +262,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--use-beam-search", action="store_true")
     parser.add_argument(
-        "--num-prompts", type=int, default=1000, help="Number of prompts to process."
-    )
-    parser.add_argument(
-        "--request-rate",
-        type=float,
-        default=float("inf"),
-        help="Number of requests per second. If this is inf, "
-        "then all the requests are sent at time 0. "
-        "Otherwise, we use Poisson process to synthesize "
-        "the request arrival times.",
+        "--num-prompts-req-rates", type=str, required=True,
+        help="[(num_prompts, request_rate), ...] where num_prompts is the number of prompts to process and request_rate is the number of requests per second.",
     )
     parser.add_argument(
         "--request-cv",
@@ -297,11 +286,47 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "--output",
+        "--exp-result-root",
         type=str,
-        help="The path to the output file that stores the benchmark results."
+        default=None,
+        help="Experiment result will be stored under folder <exp-result-root>/<exp-result-dir> (default: env var EXP_RESULT_ROOT)"
+    )
+    parser.add_argument(
+        "--exp-result-dir",
+        type=str,
+        required=True,
+        help="Experiment result will be stored under folder <exp-result-root>/<exp-result-dir> (default: <model_name>-<dataset.name>)"
+    )
+    parser.add_argument(
+        "--exp-result-prefix",
+        type=str,
+        default=None,
+        help="Exp result file will be named as <exp-result-prefix>-<num-prompts>-<req-rate>.exp (default: <backend>)"
     )
     
     args = parser.parse_args()
     
-    main(args)
+    if args.exp_result_root == None:
+        if "EXP_RESULT_ROOT" not in os.environ:
+            print(f"Error: EXP_RESULT_ROOT is not set in environment variables")
+            sys.exit(1)
+        args.exp_result_root = os.getenv("EXP_RESULT_ROOT")
+        
+    if args.exp_result_prefix == None:
+        args.exp_result_prefix = args.backend
+        
+    if args.port == None:
+        args.port = BACKEND_TO_PORTS[args.backend]
+        
+    num_prompts_request_rates = eval(args.num_prompts_req_rates)
+    for (num_prompts, request_rate) in num_prompts_request_rates:
+        print("===================================================================")
+        print(f"Running with num_prompts={num_prompts}, request_rate={request_rate}")
+        args.num_prompts = num_prompts
+        args.request_rate = request_rate
+        output_dir = os.path.join(args.exp_result_root, args.exp_result_dir)
+        os.makedirs(output_dir, exist_ok=True)
+        args.output = os.path.join(output_dir, f"{args.exp_result_prefix}-{num_prompts}-{request_rate}.exp")
+        main(args)
+        time.sleep(1)
+        
