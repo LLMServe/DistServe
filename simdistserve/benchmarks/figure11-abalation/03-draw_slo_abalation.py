@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[23]:
 
 
 is_notebook_mode = 'get_ipython' in globals()
 
 
-# In[2]:
+# In[24]:
 
 
 from pathlib import Path
@@ -15,7 +15,7 @@ Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
 
 
-# In[3]:
+# In[25]:
 
 
 import os
@@ -36,7 +36,7 @@ experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 
-# In[4]:
+# In[26]:
 
 
 dfs = []
@@ -55,7 +55,7 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     dfs.append(df)
 
 
-# In[5]:
+# In[27]:
 
 
 big_df = pd.concat(dfs, ignore_index=True)
@@ -70,13 +70,13 @@ chosen_per_gpu_rate = 4
 big_df = big_df[big_df['per_gpu_rate'] == chosen_per_gpu_rate]
 
 
-# In[6]:
+# In[28]:
 
 
 big_df
 
 
-# In[7]:
+# In[29]:
 
 
 slos = [0.4, 0.6, 0.8, 1, 1.2]
@@ -90,20 +90,20 @@ target_to_slo = {
 }
 
 
-# In[8]:
+# In[30]:
 
 
 big_df = big_df[big_df['target'].isin(targets)]
 big_df = big_df.copy()
 
 
-# In[9]:
+# In[31]:
 
 
 big_df['slo'] = big_df['target'].apply(lambda x: target_to_slo[x])
 
 
-# In[10]:
+# In[32]:
 
 
 max_machine = 4
@@ -136,19 +136,19 @@ def can_fit_low_affinity(x):
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
 
-# In[11]:
+# In[33]:
 
 
 big_df
 
 
-# In[12]:
+# In[34]:
 
 
 figure_11_right_df = big_df.copy()
 
 
-# In[13]:
+# In[35]:
 
 
 figure_11_distserve_high = figure_11_right_df[
@@ -165,7 +165,7 @@ figure_11_vllm_low = figure_11_right_df[
 ]
 
 
-# In[14]:
+# In[36]:
 
 
 def get_top_config(df):
@@ -182,13 +182,13 @@ def get_top_config(df):
     return r
 
 
-# In[15]:
+# In[37]:
 
 
 big_df = big_df.sort_values(by=['per_gpu_rate', 'slo', ], ascending=False)
 
 
-# In[16]:
+# In[38]:
 
 
 import plotly.graph_objects as go
@@ -227,7 +227,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[17]:
+# In[39]:
 
 
 import plotly.graph_objects as go
@@ -265,7 +265,7 @@ if is_notebook_mode:
 # Export to html
 
 
-# In[18]:
+# In[40]:
 
 
 import plotly.graph_objects as go
@@ -318,7 +318,7 @@ if is_notebook_mode:
 # Export to html
 
 
-# In[19]:
+# In[41]:
 
 
 def get_top_config(df):
@@ -355,7 +355,7 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[20]:
+# In[42]:
 
 
 import plotly.graph_objects as go
@@ -380,7 +380,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[21]:
+# In[43]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -403,11 +403,10 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
         label=name,
         marker='o',
     )
-    
-    return
+    return config_df['attainment'].tolist()
 
 
-# In[22]:
+# In[44]:
 
 
 import matplotlib.pyplot as plt
@@ -417,10 +416,10 @@ import matplotlib.pyplot as plt
 # y-axis: attainment
 
 fig, ax = plt.subplots()
-add_matplotlib_trace(ax, figure_11_distserve_high, "disthigh")
-add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
-add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
-add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
+a = add_matplotlib_trace(ax, figure_11_distserve_high, "disthigh")
+b = add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
+c = add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
+d = add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
 plt.title("Figure 11: Abalation Study (DistServe and vLLM)")
 plt.xlabel("Per-GPU Rate (req/s)")
 plt.ylabel("SLO Attainment (%)")
@@ -433,4 +432,19 @@ fig.savefig("figure/figure_11b.png")
 
 if is_notebook_mode:
     plt.show()
+
+
+# In[45]:
+
+
+data_points = {
+    "dist++": a,
+    "dist": b,
+    "vllm++": c,
+    "vllm": d,
+}
+with open("figure/figure_11b.json", "w") as f:
+    import json
+
+    json.dump(data_points, f)
 

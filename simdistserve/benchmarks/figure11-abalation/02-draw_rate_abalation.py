@@ -1,26 +1,28 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[72]:
+# In[92]:
 
 
 is_notebook_mode = 'get_ipython' in globals()
 
 
-# In[73]:
+# In[93]:
 
 
 from pathlib import Path
+
 Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
 
 
-# In[74]:
+# In[94]:
 
 
 from pathlib import Path
 from argparse import Namespace
 import pandas as pd
+
 assert Namespace
 
 # Get all files with format '*.latency.csv' from root_dir
@@ -31,7 +33,7 @@ experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 
-# In[75]:
+# In[95]:
 
 
 dfs = []
@@ -50,7 +52,7 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     dfs.append(df)
 
 
-# In[76]:
+# In[96]:
 
 
 big_df = pd.concat(dfs, ignore_index=True)
@@ -62,13 +64,13 @@ big_df['goodput@90'] = big_df.apply(
 )
 
 
-# In[77]:
+# In[97]:
 
 
 big_df
 
 
-# In[78]:
+# In[98]:
 
 
 max_machine = 4
@@ -101,13 +103,13 @@ def can_fit_low_affinity(x):
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
 
-# In[79]:
+# In[99]:
 
 
 big_df.sort_values(by=['backend', 'per_gpu_rate', 'tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode'])
 
 
-# In[80]:
+# In[100]:
 
 
 target = '(200.0, 100.0)'
@@ -138,37 +140,37 @@ figure_11_vllm_low = figure_11_left_df[
     ]
 
 
-# In[81]:
+# In[101]:
 
 
 figure_11_distserve_high
 
 
-# In[82]:
+# In[102]:
 
 
 figure_11_distserve_low
 
 
-# In[83]:
+# In[103]:
 
 
 figure_11_vllm_high
 
 
-# In[84]:
+# In[104]:
 
 
 figure_11_vllm_low
 
 
-# In[84]:
+# In[104]:
 
 
 
 
 
-# In[85]:
+# In[105]:
 
 
 # Plot the `figure_11_distserve_high`for some configurations
@@ -207,7 +209,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[86]:
+# In[106]:
 
 
 # Plot the `figure_11_vllm_high`for some configurations
@@ -244,7 +246,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[87]:
+# In[107]:
 
 
 import plotly.graph_objects as go
@@ -302,7 +304,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[88]:
+# In[108]:
 
 
 # Find the best config that has the highest goodput@90 and attainment
@@ -317,7 +319,6 @@ def get_top_config(df):
         "pp_decode",
     ]]
     return r
-
 
 
 def add_plotly_trace(fig, df: 'DataFrame', trace: str):
@@ -340,7 +341,7 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[89]:
+# In[109]:
 
 
 import plotly.graph_objects as go
@@ -362,7 +363,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[90]:
+# In[118]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -383,10 +384,10 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
         label=name,
         marker='o',
     )
-    return
+    return config_df['attainment'].tolist()
 
 
-# In[91]:
+# In[119]:
 
 
 import matplotlib.pyplot as plt
@@ -396,10 +397,11 @@ import matplotlib.pyplot as plt
 # y-axis: attainment
 
 fig, ax = plt.subplots()
-add_matplotlib_trace(ax, figure_11_distserve_high, "disthigh")
-add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
-add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
-add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
+a = add_matplotlib_trace(ax, figure_11_distserve_high, "disthigh")
+b = add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
+c = add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
+d = add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
+
 plt.title("Figure 11: Abalation Study (DistServe and vLLM)")
 plt.xlabel("Per-GPU Rate (req/s)")
 plt.ylabel("SLO Attainment (%)")
@@ -407,4 +409,19 @@ plt.legend()
 fig.savefig("figure/figure_11a.png")
 if is_notebook_mode:
     plt.show()
+
+
+# In[122]:
+
+
+data_points = {
+    "dist++": a,
+    "dist": b,
+    "vllm++": c,
+    "vllm": d,
+}
+with open("figure/figure_11a.json", "w") as f:
+    import json
+
+    json.dump(data_points, f)
 
