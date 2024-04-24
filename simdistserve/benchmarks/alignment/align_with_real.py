@@ -90,6 +90,7 @@ def get_vllm_comparison(
     # Compare the attention rate
     c['sim_attn'] = (c['first_token_latency'] < target_ftl) & (c['tpot'] < target_tpot)
     c['real_attn'] = (c['ttft_ms'] < target_ftl) & (c['tpot_ms'] < target_tpot)
+    c.to_csv(f"alignment-output/{name}.extra.csv")
     N = len(c)
     real_attn = c['real_attn'].sum() / N * 100
     sim_attn = c['sim_attn'].sum() / N * 100
@@ -162,6 +163,7 @@ def get_distserve_comparison(
     # Compare the attention rate
     c['sim_attn'] = (c['first_token_latency'] < target_ftl) & (c['tpot'] < target_tpot)
     c['real_attn'] = (c['ttft_ms'] < target_ftl) & (c['tpot_ms'] < target_tpot)
+    c.to_csv(f"alignment-output/{name}.extra.csv")
     N = len(c)
     real_attn = c['real_attn'].sum() / N * 100
     sim_attn = c['sim_attn'].sum() / N * 100
@@ -216,17 +218,10 @@ df['diff'] = df['real_attn'] - df['sim_attn']
 print(df.to_markdown(floatfmt=".2f"))
 now = pd.Timestamp.now()
 logf = open(
-    f"/Users/mike/Project/DistServe/simdistserve/scratch/alignment/logs/"
+    f"logs/"
     + now.strftime("%Y%m%d_%H%M%S") + ".txt", "w"
 )
 print(df.to_markdown(floatfmt=".2f"), file=logf)
-
-t = "/Users/mike/Project/DistServe/simdistserve/estimators/profile_data/profiler-a100-80g.json"
-with open(t) as f:
-    data = json.load(f)
-a = data['facebook/opt-13b']
-print(a)
-print(a, file=logf)
 
 print(f"RMSE: {rmse:.2f}")
 print(f"RMSE: {rmse:.2f}", file=logf)

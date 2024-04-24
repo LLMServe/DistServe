@@ -18,10 +18,10 @@ else
 fi
 
 
-total_gpu=4
+total_gpu=8
 
 # Run experiment for DistServe
-client_cmdline="python3 ${exec_path} --backend distserve --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
+client_cmdline="python3 ${exec_path} --model opt_66b --backend distserve --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
 file_prefix='result/simulate-distserve-{workload}-n{N}-r{rate}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}'
 python ../simulate_multi.py \
 --client-cmdline "$client_cmdline" \
@@ -33,7 +33,7 @@ python ../simulate_multi.py \
 
 # Run experiment for vLLM
 # Note: `--xp-decode 0` is set becuase vLLM only use `--xp-prefill` as parallelism setting in the script.
-client_cmdline="python3 ${exec_path} --backend vllm --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
+client_cmdline="python3 ${exec_path} --model opt_66b --backend vllm --N {N} --workload {workload} --rate {rate} ${config_tpl} ${output_tpl}"
 file_prefix='result/simulate-vllm-{workload}-n{N}-r{rate}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}'
 python ../simulate_multi.py \
 --client-cmdline "$client_cmdline" \

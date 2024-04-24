@@ -185,14 +185,15 @@ class Worker:
         # decode_max_tokens
 
         # Acceptable decode requests is capped by the remaining allowed tokens in this batch.
-        decode_max_tokens = self.decode_max_tokens
+        # TODO: Hack: Must revert this to use the max token given
+        # watermark = 0.9
+        # decode_max_tokens = self.decode_max_tokens * watermark
+        decode_max_tokens = 50000
         _decode_len = min(remaining_tok_in_batch, len(self.decode_queue))
         decode_reqs = []
         for i in range(_decode_len):
             req = self.decode_queue[0]
-            # TODO: could be off by one (current_context_len + 1)
             if (req.current_context_len + 1) > decode_max_tokens:
-                print(f"### Decode request is too big. Decode max token limit reached: {self.decode_max_tokens}.")
                 break
             decode_max_tokens -= (req.current_context_len + 1)
             decode_reqs.append(self.decode_queue.popleft())

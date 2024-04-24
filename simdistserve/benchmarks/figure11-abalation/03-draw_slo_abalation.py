@@ -66,7 +66,7 @@ big_df['goodput@90'] = big_df.apply(
     axis=1,
 )
 big_df['target'] = big_df['target'].apply(eval)
-chosen_per_gpu_rate = 4
+chosen_per_gpu_rate = 1
 big_df = big_df[big_df['per_gpu_rate'] == chosen_per_gpu_rate]
 
 
