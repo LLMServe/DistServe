@@ -1,31 +1,29 @@
-# DistServe Reproducibility Guide
+# DistLLM Artifact Evaluation Guide
 
-This file will guide you through the process of reproducing the results of the paper "DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving".
-
-Since it is rediculously hard to rent a node with eight NVIDIA A100 80GB SXM GPUs, and (at least for us) impossible to rent three of them with Infiniband interconnect, we will provide a screencast for the OPT-175B end-to-end experiment (which needs three nodes).
-
-For the OPT-13B end-to-end experiment (which runs on 4 GPUs) and the OPT-66B experiment (which runs on 8 GPUs), we provide a python script for you to SHUA JI QI. Ideally it grabs a 4 GPU node in 10 minutes and an 8 GPU node in about 24 hours. We also provide corresponding screen recordings, if you find it annoying to SHUA JI QI.
+This is the artifact of the paper "DistLLM: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving". We are going to guide you through the process of reproducing the main results in the paper.
 
 Here is a high level overview of the whole process:
-1. Create a docker container instance (pod) from our image as a GPU instance on RunPod (other cloud providers are also supported)
-2. Run some toy examples to verify DistServe and two baselines (vLLM and DeepSpeed-MI) are working (for the kick-the-tires step)
-3. Run the full experiments
-4. Post-process the results and generate the figures
+1. Environment Setup: Create a GPU instance on [RunPod](https://www.runpod.io/) from our provided template with all the environment already setup.
+2. Kick-the-tires: Run some toy examples to verify DistLLM and baselines (vLLM and DeepSpeed-MII) are working.
+3. Full evaluation: Reproduce all the main results in the paper.
 
-During the kick-the-tires step, only step 1 and 2 are required, which takes about TODO human-minutes and TODO compute-minutes. The full experiments will take about TODO human-hours and TODO compute-hours.
+## Environment Setup
 
-NOTE. To save your time, we've preprocessed the datasets and saved them to `/app/dataset`, so you can skip the dataset preparation step. If you want to reproduce the dataset, please refer to `docs/repro-dataset.md`.
+Follow the steps below to create a GPU instance on [RunPod](https://www.runpod.io/) with template `distserve-evaluation`: 
+- Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
+- Click `Pods` in the left toolbar.
+- Click `+ Deploy`.
+- Choose `A100 SXM 80GB`.
+- Click `Change Template` and choose `distserve-evaluation`.
+- Choose `GPU Count`: For Kick-the-tires, 2 GPUs are sufficient, which is usually always available on RunPod. For full evaluation, 8 GPUs are required and we provide a script to grab the machine automatically because 8xA100-SXM machine is a ridiculously popular resource on clouds and it usually takes over 1 day to grab the machine.
+- Click `Deploy On-Demand`: If the button is grey, it means this resource is not currently available.
 
-## Step 1. Create a GPU instance on RunPod
+**It is appreciated to stop the instance when you finish the review process each time, we pay real dollars for the GPU hours :)**
 
-*TODO human-minutes + TODO compute-minutes*
+### Dataset Preprocessing
+To save your time, we've preprocessed the datasets in advance and saved them to `/app/dataset` in the template. If you want to reproduce the dataset, please follow [this instruction](repro-dataset.md).
 
-(For kick-the-tire, 2 GPUs are sufficient, which can be easily obtained on RunPod)
-
-(Use the template called `distserve-evaluation`)
-
-## Step 2. Kick-the-tires
-
+## Kick-the-tires
 *15 human-minutes + 20 compute-minutes*
 
 Some high-level overviews and notes:
@@ -33,7 +31,7 @@ Some high-level overviews and notes:
 - We will use a wrapper script, `/app/distserve/distserve/evaluation/2-benchmark-serving/2-start-api-server.py`, to launch the API server. The script will print the command it uses to launch the server, which can be used to inspect the startup parameters.
 - The load generator locates at `/app/distserve/distserve/evaluation/2-benchmark-serving/2-benchmark-serving.py`. Given a target dataset and a list of (num_prompt, request_rate)s, it runs serval rounds of experiments, each with a given (num_prompt, request_rate) pair, and save the result to a file located at `/workspace/exp-results/<model-name>-<dataset-name>/<backend>-<num_prompt>-<request_rate>.exp`, for example, `/workspace/exp-results/opt-1.3b-sharegpt/vllm-50-2.exp`
 
-Now we can run some toy examples to verify DistServe and two baselines (vLLM and DeepSpeed) are working:
+Now we can run some toy examples to verify DistLLM and two baselines (vLLM and DeepSpeed) are working:
 
 ### vLLM
 
@@ -57,7 +55,7 @@ python3 /app/distserve/distserve/evaluation/2-benchmark-serving/2-benchmark-serv
 
 Ideally it should run without any error, and generate a file `/workspace/exp-results/opt-1.3b-sharegpt/vllm-50-2.exp`.
 
-### DeepSpeed
+### DeepSpeed-MII
 
 On the `S-terminal`, run the following command:
 
@@ -79,7 +77,7 @@ python3 /app/distserve/distserve/evaluation/2-benchmark-serving/2-benchmark-serv
 
 Ideally it should generate a file `/workspace/exp-results/opt-1.3b-sharegpt/deepspeed-50-2.exp`.
 
-### DistServe
+### DistLLM
 
 On the `S-terminal`, run the following command:
 
@@ -98,3 +96,19 @@ python3 /app/distserve/distserve/evaluation/2-benchmark-serving/2-benchmark-serv
 ```
 
 Ideally it should generate a file `/workspace/exp-results/opt-1.3b-sharegpt/distserve-50-2.exp`.
+
+
+
+## Full Evaluation
+
+### End-to-end Experiments (Section 6.2, Figure. 8 + Figure 9)
+
+The OPT-175B experiment of DistLLM requires four DGX-A100 nodes, each with eight A100 GPUs. On common cloud providers like AWS or Runpod, this experiment costs over 100$/h and over 2000$ in total. Also, due to the shortage of GPU resources recently, it takes 1-2 days to grab one DGX-A100 node with automatic script (which we will provide you), So it is too expensive for us to reproduce this experiment. so for reviewers who do not want to experience this tedious machine-grabing process, we provide the screencast of producing. 
+
+Since it is rediculously hard to rent even a single node with eight NVIDIA A100 80GB SXM GPUs recently on common cloud providers (like AWS and Runpod), so we provide the screencast of producing and (at least for us) impossible to rent three of them with Infiniband interconnect, we will provide a screencast for the OPT-175B end-to-end experiment (which needs three nodes).**
+
+### Latency Breakdown (Section 6.3, Figure. 10) 
+TODO
+
+### Ablation Studies (Section 6.4, Figure. 11)
+TODO
