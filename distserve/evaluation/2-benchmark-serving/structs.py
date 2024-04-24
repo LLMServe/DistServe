@@ -19,12 +19,12 @@ class Dataset:
     """
  
     dataset_name: str	# "sharegpt" / "alpaca" / ...
-    data: List[TestRequest]
+    reqs: List[TestRequest]
     
     def dump(self, output_path: str):
         marshal.dump({
             "dataset_name": self.dataset_name,
-            "data": [(req.prompt, req.prompt_len, req.output_len) for req in self.data]
+            "reqs": [(req.prompt, req.prompt_len, req.output_len) for req in self.reqs]
         }, open(output_path, "wb"))
     
     @staticmethod

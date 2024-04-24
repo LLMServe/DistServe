@@ -23,11 +23,11 @@ def sample_requests(dataset_path: str, num_prompts: int) -> List[TestRequest]:
     sample_requests: Sample the given number of requests from the dataset.
     """
     dataset = Dataset.load(dataset_path)
-    if num_prompts > len(dataset.data):
+    if num_prompts > len(dataset.reqs):
         raise ValueError(
-            f"Number of prompts ({num_prompts}) is larger than the dataset size ({len(dataset.data)})."
+            f"Number of prompts ({num_prompts}) is larger than the dataset size ({len(dataset.reqs)})."
         )
-    return random.sample(dataset.data, num_prompts)
+    return random.sample(dataset.reqs, num_prompts)
 
 
 async def get_request(
