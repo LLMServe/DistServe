@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     # Run and wait for all subprocesses to finish
     procs = []
-    max_concurrent_procs = os.cpu_count() - 1
+    max_concurrent_procs = min(os.cpu_count(), 32) - 1
     for cmd, file_prefix in tqdm.tqdm(cmds):
         if len(procs) >= max_concurrent_procs:
             while True:

@@ -1,4 +1,3 @@
-import os
 import time
 
 from simdistserve.benchmarks.simulate_dist import run_experiment, parse_args
@@ -20,12 +19,6 @@ def run_binary_search(
     debug=False,
 ):
     N = str(N)
-    cpu_count = os.cpu_count()
-    cpu_core = pid % cpu_count
-    try:
-        os.sched_setaffinity(0, {cpu_core})
-    except:
-        pass
 
     #
     # make config args
