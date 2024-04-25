@@ -133,13 +133,34 @@ To allocate a CPU instance in RunPod, follow these steps:
 - Check the pod template is `Runpod Ubuntu (runpod/base:0.5.1-cpu)`
 - Click `Deploy On-Demand`
 
-#### Prepare Environmnet
+
+
+#### (Optional) Prepare Environmnet
+
+In case the network volumn is corrupted, you can start a new environment and prepare the environment in a new runpod container:
 
 ```bash
 apt update
+apt install git 
+
 cd /workspace
+git clone <repo>
+
+
+cd /workspace
+python3.11 -m virtualenv venv
+source venv/bin/activate
+python -m pip install simpy tqdm matplotlib pandas joblib shlex 
 
 ```
+
+
+
+#### (Optional) Prepare Dataset
+
+To save your time, we've preprocessed the datasets in advance and saved them to `/app/dataset` in the template. If you want to reproduce the dataset, please follow [this instruction (step 2b)](repro-dataset.md).
+
+TODO: Validate the dataset preparation instruction
 
 
 
@@ -154,7 +175,14 @@ source venv/bin/activate
 
 # Run abalation study
 cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation
-bash run_abalation_13b_sharegpt.sh
+rm -rf result visual figure # clean existing results if exists
+bash 01-run_abalation.sh opt_13b_sharegpt
+
+# Draw figures
+mkdir -p visual figure
+python 02-draw_rate_abalation.py --target "(200, 100)"
+python 03-draw_slo_abalation.py --target "(200, 100)" --per_gpu_rate 1
+python 04-draw_abalation_curve.py --rates "[1,2,3,4,5]"
 
 # See the figure `abalation.png`
 cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation/figure

@@ -61,20 +61,20 @@ Now you should have `sharegpt.ds`, `humaneval.ds`, and `longbench.ds` under `$DA
 Now we start to preprocess the datasets:
 
 ```bash
-source /app/venv/activate
-cd /app/simdistserve/
+source /workspace/venv/activate
+cd /workspace/simdistserve/
 
 # Check var $DATASET
+DATASET=/workspace/simdistserve/data
 echo $DATASET
 
 # Preprocess the "ShareGPT" dataset
-python prepare-dataset.py --dataset sharegpt --dataset-path $DATASET/raw/ShareGPT_V3_unfiltered_cleaned_split.json --tokenizer facebook/opt-13b --output-path $DATASET/sharegpt.ds
+python prepare-dataset.py --dataset sharegpt --dataset-path $DATASET/raw/ShareGPT_V3_unfiltered_cleaned_split.json --tokenizer facebook/opt-13b --output-path $DATASET/sharegpt.dataset
 
 # Preprocess the "HumanEval" dataset
-python prepare-dataset.py --dataset humaneval --dataset-path $DATASET/raw/HumanEval.jsonl --tokenizer facebook/opt-13b --output-path $DATASET/humaneval.ds
+python prepare-dataset.py --dataset humaneval --dataset-path $DATASET/raw/HumanEval.jsonl --tokenizer facebook/opt-13b --output-path $DATASET/humaneval.dataset
 
 # Preprocess the "LongBench" dataset
-python prepare-dataset.py --dataset longbench --dataset-path $DATASET/raw/longbench/ --tokenizer facebook/opt-13b --output-path $DATASET/longbench.ds
+python prepare-dataset.py --dataset longbench --dataset-path $DATASET/raw/longbench/ --tokenizer facebook/opt-13b --output-path $DATASET/longbench.dataset
 ```
 
-Now you should have `sharegpt.ds`, `humaneval.ds`, and `longbench.ds` under `$DATASET/`.

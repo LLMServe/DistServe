@@ -11,7 +11,7 @@ import argparse
 def parse_args(args_=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", type=str, default='(200, 100)')
-    parser.add_argument("--per_gpu_rate", type=float, default=chosen_per_gpu_rate)
+    parser.add_argument("--per_gpu_rate", type=float, default=1)
     args = parser.parse_args(args_)
     return args
 
