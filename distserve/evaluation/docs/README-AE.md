@@ -135,43 +135,6 @@ To allocate a CPU instance in RunPod, follow these steps:
 
 
 
-#### (Optional) Prepare Environmnet
-
-In case the network volumn is corrupted, you can start a new environment and prepare the environment in a new runpod container:
-
-```bash
-apt update
-apt install git 
-
-# Install 
-cd /workspace
-git clone <repo-link>
-
-# Prepare python environment
-cd /workspace
-python3.11 -m virtualenv venv
-source venv/bin/activate
-python -m pip install simpy tqdm matplotlib pandas joblib shlex 
-
-# Editable install DistServe packages
-cd /workspace/DistServe/
-pip install -e .
-```
-
-TODO: repo-link
-
-
-
-#### (Optional) Prepare Dataset
-
-To save your time, we've preprocessed the datasets in advance and saved them to `/app/dataset` in the template. If you want to reproduce the dataset, please follow [this instruction (step 2b)](repro-dataset.md).
-
-TODO: Validate the dataset preparation instruction
-
-TODO: Dataset preparation. Currently the abalation study uses `.dataset` dataset under `/workspace/DistServe/simdistserve/data`. Should reuse the dataset preparation doc.
-
-
-
 #### Run Abalation Study
 
 Once you connect to the instance, run the following to start benchmarking:
