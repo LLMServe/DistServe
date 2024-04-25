@@ -147,7 +147,10 @@ def main(args, outputs=None):
     # Handle vllm in data processing
     #
     if not is_model_runnable(model_type, TP_Prefill, PP_prefill):
-        raise ValueError(f"Model {model_type} is not runnable with TP={TP_Prefill}, PP={PP_prefill}")
+        raise ValueError(
+            f"Model {model_type} is not runnable with TP={TP_Prefill}, PP={PP_prefill}. "
+            f"Skipping by throwing exception..."
+        )
 
     prefill_max_tokens = get_max_num_tokens(model_type, TP_Prefill, PP_prefill)
     if args.backend == 'vllm':

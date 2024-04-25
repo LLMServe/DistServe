@@ -98,13 +98,10 @@ figure_11_vllm_high = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
 ]
 
-if model_type == "OPT-13B": __tp = 1
-if model_type == "OPT-66B": __tp = 2
-if model_type == "OPT-175B": __tp = 4
 figure_11_vllm_low = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
     & (figure_11_left_df['pp_prefill'] == 1)
-    & (figure_11_left_df['tp_prefill'] == __tp)
+    # & (figure_11_left_df['tp_prefill'] == __tp)
     ]
 
 

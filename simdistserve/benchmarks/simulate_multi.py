@@ -1,14 +1,13 @@
 import argparse
-import os, sys
-import argparse
+import os
 import shlex
-from collections import deque
+import time
 from itertools import product
+from pathlib import Path
 from subprocess import Popen
 from typing import List
 
 import tqdm
-import time
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -92,11 +91,18 @@ if __name__ == "__main__":
     file_prefix = args.file_prefix
     total_gpus = args.total_gpu
 
+    # Check the dataset directory exist
+    dataset_root = os.environ.get('DATASET', '/app/dataset')
+    dataset_root = Path(dataset_root)
+    if not dataset_root.exists():
+        raise ValueError(f"Dataset root directory {dataset_root} does not exist. "
+                         f"Please set the environment variable `DATASET` to the directory with data.")
+
     # Produce the actual cmds
     cmds = []
     for workload in workloads:
         for base_N in base_Ns:
-        # for N in Ns: # TODO: Use `Ns` or `base_Ns` - determine here.
+            # for N in Ns: # TODO: Use `Ns` or `base_Ns` - determine here.
             for tp_prefill, pp_prefill, tp_decode, pp_decode in product(
                 tp_prefills, pp_prefills, tp_decodes, pp_decodes
             ):
