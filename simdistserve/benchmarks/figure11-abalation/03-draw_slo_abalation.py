@@ -28,18 +28,11 @@ Path("visual").mkdir(exist_ok=True)
 # root_dir = Path("fig11-abalation-log")
 root_dir = Path("result")
 latency_file_paths = sorted(list(root_dir.glob("*.latency.csv")))
-experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 dfs = []
 namespaces = []
-for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment_log_paths):
-    # read experiment_log_path and log the namespace
-    # with open(experiment_log_path, 'r') as f:
-    #     exp_args = f.read()
-    #     exp_args = eval(exp_args)
-    #     namespaces.append(exp_args)
-
+for latency_file_path in latency_file_paths:
     try:
         df = pd.read_csv(latency_file_path)
         dfs.append(df)
