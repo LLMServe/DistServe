@@ -22,7 +22,9 @@ def main(num_node, num_gpu_per_node, is_dist_high: bool = True):
     max_cpu_count = os.cpu_count() - 2
 
     processes = []
+    pbar = tqdm(configs)
     for pid, config in tqdm(enumerate(configs), total=len(configs)):
+        pbar.update(1)
 
         proc = Process(
             target=run_binary_search,
@@ -36,6 +38,7 @@ def main(num_node, num_gpu_per_node, is_dist_high: bool = True):
                 max_per_gpu_rate=5,
                 pid=pid,
                 esp=0.25,
+                N=300,
             )
         )
         if len(processes) >= max_cpu_count:
@@ -83,6 +86,6 @@ if __name__ == '__main__':
         print(f"DistLow({ngpu_per_node=},{num_node=}):{duration}s")
 
     df = pd.DataFrame(data)
-    df.to_csv("parallel_bisect.csv", index=False)
+    df.to_csv("runtime_result.csv", index=False)
 
     pass

@@ -4,8 +4,6 @@ import time
 from simdistserve.benchmarks.simulate_dist import run_experiment, parse_args
 from simdistserve.constants import ModelTypes
 
-from contextlib import nullcontext
-
 
 def run_binary_search(
     model_type: ModelTypes,
@@ -18,7 +16,9 @@ def run_binary_search(
     max_per_gpu_rate: int = 16,
     pid=0,
     esp=0.5,
+    N=1000,
 ):
+    N = str(N)
     cpu_count = os.cpu_count()
     cpu_core = pid % cpu_count
     os.sched_setaffinity(0, {cpu_core})
@@ -53,10 +53,11 @@ def run_binary_search(
     low = 0
     high = max_per_gpu_rate
     best_per_gpu_rate = 0
+
     fixed_args = [
         '--arrival', 'poisson',
         '--seed', '0',
-        '--N', '1000',
+        '--N', N,
         '--prefill-containment', prefill_containment,  # P90
         '--prefill-target', prefill_target,  # ms
         '--decode-containment', decode_containment,  # P90
@@ -70,7 +71,6 @@ def run_binary_search(
     time_durations = []
     while (high - low) > esp:
         # Run simulation
-        # low = max(shared_best_goodput.value, low)
         this_rate = (low + high) / 2
         rate = this_rate * num_gpu
         args = [*fixed_args, *config_args, '--rate', rate, ]
@@ -80,7 +80,6 @@ def run_binary_search(
             start_time = time.time()
             is_prefill_contained, is_decode_contained, df = run_experiment(args)
             end_time = time.time()
-            print(end_time - start_time)
             time_durations.append((config, this_rate, end_time - start_time))
         except Exception as e:
             return None
