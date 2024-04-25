@@ -106,8 +106,17 @@ The OPT-175B experiment of DistLLM requires four 8xA100-SXM-80GB machines. On co
 
 The OPT-13B and OPT-66B experiments require one 8xA100-SXM-80GB machine. However, due to the shortage of 8xA100-SXM-80GB machines recently, it takes 1-2 days to grab even a single machine with automatic script (which we will provide you). So for reviewers who do not want to experience this tedious machine-grabing process, we provide the [screencast]() of producing the results in each figure. 
 
+If you successfully obtain one 8xA100-SXM-80GB machine, run
+
+TODO: Command
 ### Latency Breakdown (Section 6.3, Figure. 10) 
-TODO
+Due to the same budget reason, we cannot afford to reproduce the OPT-175B experiment in the left figure of Figure. 10. However, we provide a OPT-66B version which can also verify our claim in this Section that the transmission time is negligible compared to computation in DistLLM.
+
+We also provide the [screencast]() of producing the results in Figure. 10 in case the reviewers do not want to experience the machine-grabing process.
+
+If you successfully obtain one 8xA100-SXM-80GB machine, run
+
+TODO: Command
 
 ### Ablation Studies (Section 6.4, Figure. 11)
-TODO
+TODO: Command
