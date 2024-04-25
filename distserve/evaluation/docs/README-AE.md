@@ -168,6 +168,8 @@ To save your time, we've preprocessed the datasets in advance and saved them to 
 
 TODO: Validate the dataset preparation instruction
 
+TODO: Dataset preparation. Currently the abalation study uses `.dataset` dataset under `/workspace/DistServe/simdistserve/data`. Should reuse the dataset preparation doc.
+
 
 
 #### Run Abalation Study
@@ -194,6 +196,6 @@ python 04-draw_abalation_curve.py --rates "[1,2,3,4,5]"
 cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation/figure
 ```
 
-TODO: Dataset preparation. Currently the abalation study uses `.dataset` dataset under `/workspace/DistServe/simdistserve/data`. Should reuse the dataset preparation doc.
+
 
 TODO: How should reviewer see the file?
