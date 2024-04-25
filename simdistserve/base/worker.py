@@ -257,10 +257,6 @@ class Worker:
                 assert candidate.remain_prefill_lens >= 0
                 result.append(self.prefill_queue.popleft())
                 pass
-
-        if self.prefill_queue:
-            print("### Prefill queue is not empty. Prefill max token limit reached.")
-            pass
         for i in result:
             i.do_prefill(wid=self.wid)
         return result
