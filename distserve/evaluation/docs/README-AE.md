@@ -143,16 +143,22 @@ In case the network volumn is corrupted, you can start a new environment and pre
 apt update
 apt install git 
 
+# Install 
 cd /workspace
-git clone <repo>
+git clone <repo-link>
 
-
+# Prepare python environment
 cd /workspace
 python3.11 -m virtualenv venv
 source venv/bin/activate
 python -m pip install simpy tqdm matplotlib pandas joblib shlex 
 
+# Editable install DistServe packages
+cd /workspace/DistServe/
+pip install -e .
 ```
+
+TODO: repo-link
 
 
 
