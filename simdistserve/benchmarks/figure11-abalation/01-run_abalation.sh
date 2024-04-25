@@ -13,6 +13,14 @@ if [ $workloads == "opt_13b_sharegpt" ]; then
     prefill_target=200
     decode_target=100
     chosen_per_gpu_rate=2
+elif [ $workloads == "opt_13b_sharegpt_32gpu" ]; then
+    total_gpu=32
+    per_gpu_rate='[1,2,3,4,5]'
+    base_N='[100]'
+    model="opt_13b"
+    prefill_target=200
+    decode_target=100
+    chosen_per_gpu_rate=2
 elif [ $workloads == "opt_66b_sharegpt" ]; then
     total_gpu=8
     per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
@@ -96,4 +104,4 @@ python ../simulate_multi.py \
 mkdir -p visual figure
 python 02-draw_rate_abalation.py --target "($prefill_target, $decode_target)"
 python 03-draw_slo_abalation.py --target "($prefill_target, $decode_target)" --per_gpu_rate $chosen_per_gpu_rate
-python 04-draw_abalation_curve.py
+python 04-draw_abalation_curve.py --rates "$per_gpu_rate"

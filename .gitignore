@@ -175,3 +175,4 @@ cython_debug/
 logs
 /simdistserve/benchmarks/figure11-abalation/result
 /simdistserve/benchmarks/figure11-abalation/visual
+*.html
