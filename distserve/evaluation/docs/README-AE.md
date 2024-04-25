@@ -38,7 +38,7 @@ Now we can run some toy examples to verify DistLLM and two baselines (vLLM and D
 On the `S-terminal`, run the following command:
 
 ```bash
-micromamba activate distserve	# NOTE. This is not a typo. This environment is for the wrapper script
+micromamba activate distserve
 python3 /app/distserve/distserve/evaluation/2-benchmark-serving/2-start-api-server.py --backend vllm --model facebook/opt-1.3b
 ```
 
@@ -51,7 +51,7 @@ micromamba activate distserve
 python3 /app/distserve/distserve/evaluation/2-benchmark-serving/2-benchmark-serving.py --backend vllm --dataset /app/dataset/sharegpt.ds --num-prompts-req-rates "[(50, 2)]" --verbose
 ```
 
-*Note. Here we add the `--verbose` flag to print out all prompts & responses for a simple correctness check. On the formal experiments (@zym polish this plz), we will not use this flag.*
+*Note. Here we add the `--verbose` flag to print out all prompts & responses for a simple correctness check. In the full evaluation section, we will not use this flag.*
 
 Ideally it should run without any error, and generate a file `/workspace/exp-results/opt-1.3b-sharegpt/vllm-50-2.exp`.
 
