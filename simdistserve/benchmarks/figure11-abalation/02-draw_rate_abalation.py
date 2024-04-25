@@ -1,8 +1,8 @@
 import argparse
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from argparse import Namespace
-from pathlib import Path
 
 target = '(200.0, 100.0)'
 

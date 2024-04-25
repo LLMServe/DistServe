@@ -1,11 +1,9 @@
 import argparse
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-import os
 import pandas as pd
-from argparse import Namespace
-from pathlib import Path
-from pathlib import Path
 
 max_machine = 4
 max_gpu_per_node = 8
