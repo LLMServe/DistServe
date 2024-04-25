@@ -71,7 +71,7 @@ if __name__ == '__main__':
     data = []
     for ngpu in [2, 4, 8, 16, 32]:
         start = time.perf_counter()
-        main(ngpu, 1, is_dist_high=True)
+        main(ngpu, 1, is_dist_high=True, run_parallel=run_parallel)
         end = time.perf_counter()
         duration = end - start
         data.append({
