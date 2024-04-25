@@ -1,13 +1,16 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
+import argparse
+import json
+import matplotlib.pyplot as plt
+import os
+import pandas as pd
+from argparse import Namespace
+from pathlib import Path
+from pathlib import Path
 
 max_machine = 4
 max_gpu_per_node = 8
 
-import argparse
+
 def parse_args(args_=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", type=str, default='(200, 100)')
@@ -19,30 +22,9 @@ def parse_args(args_=None):
 args = parse_args()
 chosen_per_gpu_rate = args.per_gpu_rate
 target = eval(args.target)
-        
 
-
-
-# In[ ]:
-
-
-from pathlib import Path
 Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
-
-
-# In[ ]:
-
-
-import os
-from argparse import Namespace
-from pathlib import Path
-
-import pandas as pd
-
-assert Namespace
-
-
 
 # Get all files with format '*.latency.csv' from root_dir
 # root_dir = Path("fig11-abalation-log")
@@ -50,10 +32,6 @@ root_dir = Path("result")
 latency_file_paths = sorted(list(root_dir.glob("*.latency.csv")))
 experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
-
-
-# In[ ]:
-
 
 dfs = []
 namespaces = []
@@ -69,11 +47,6 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
         dfs.append(df)
     except pd.errors.EmptyDataError:
         pass
-    
-
-
-# In[ ]:
-
 
 big_df = pd.concat(dfs, ignore_index=True)
 big_df['ngpu'] = big_df['tp_prefill'] * big_df['pp_prefill'] + big_df['tp_decode'] * big_df['pp_decode']
@@ -85,15 +58,7 @@ big_df['goodput@90'] = big_df.apply(
 big_df['target'] = big_df['target'].apply(eval)
 big_df = big_df[big_df['per_gpu_rate'] == chosen_per_gpu_rate]
 
-
-# In[ ]:
-
-
 big_df
-
-
-# In[ ]:
-
 
 slos = [0.4, 0.6, 0.8, 1, 1.2]
 targets = [
@@ -105,21 +70,10 @@ target_to_slo = {
     for target, slo in zip(targets, slos)
 }
 
-
-# In[ ]:
-
-
 big_df = big_df[big_df['target'].isin(targets)]
 big_df = big_df.copy()
 
-
-# In[ ]:
-
-
 big_df['slo'] = big_df['target'].apply(lambda x: target_to_slo[x])
-
-
-# In[ ]:
 
 
 def can_fit_low_affinity_distserve(x):
@@ -147,37 +101,22 @@ def can_fit_low_affinity(x):
 
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
-
-# In[ ]:
-
-
 big_df
 
-
-# In[ ]:
-
-
 figure_11_right_df = big_df.copy()
-
-
-# In[ ]:
-
 
 figure_11_distserve_high = figure_11_right_df[
     (figure_11_right_df['backend'] == 'distserve')
 ]
 figure_11_distserve_low = figure_11_right_df[
     (figure_11_right_df['backend'] == 'distserve') & (figure_11_right_df['low_affin'])
-]
+    ]
 figure_11_vllm_high = figure_11_right_df[
     (figure_11_right_df['backend'] == 'vllm')
 ]
 figure_11_vllm_low = figure_11_right_df[
     (figure_11_right_df['backend'] == 'vllm') & (figure_11_right_df['low_affin'])
-]
-
-
-# In[ ]:
+    ]
 
 
 def get_top_config(df):
@@ -192,20 +131,11 @@ def get_top_config(df):
         "pp_decode",
     ]]
     return r
-
-
-# In[ ]:
 
 
 big_df = big_df.sort_values(by=['per_gpu_rate', 'slo', ], ascending=False)
 
 
-# In[ ]:
-
-
-# In[ ]:
-
-
 def get_top_config(df):
     strictest_slo = min(slos)
     r = df[df['slo'] == strictest_slo].sort_values(
@@ -218,8 +148,6 @@ def get_top_config(df):
         "pp_decode",
     ]]
     return r
-
-# In[ ]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -237,18 +165,13 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
         pass
 
     fig.plot(
-        config_df['slo'], 
+        config_df['slo'],
         config_df['attainment'],
         label=name,
         marker='o',
     )
     return config_df['attainment'].tolist()
 
-
-# In[ ]:
-
-
-import matplotlib.pyplot as plt
 
 # Plot a line chart with 4 curves
 # x-axis: per_gpu_rate
@@ -269,9 +192,6 @@ plt.legend()
 # save the plot 
 fig.savefig("figure/figure_11b.png")
 
-# In[ ]:
-
-
 data_points = {
     "dist++": a,
     "dist": b,
@@ -279,7 +199,4 @@ data_points = {
     "vllm": d,
 }
 with open("figure/figure_11b.json", "w") as f:
-    import json
-
     json.dump(data_points, f)
-

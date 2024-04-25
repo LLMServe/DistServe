@@ -1,15 +1,13 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[41]:
-
+import argparse
+import matplotlib.pyplot as plt
+import pandas as pd
+from argparse import Namespace
+from pathlib import Path
 
 target = '(200.0, 100.0)'
 
 max_machine = 4
 max_gpu_per_node = 8
-
-import argparse
 
 
 def parse_args(args_=None):
@@ -18,27 +16,12 @@ def parse_args(args_=None):
     args = parser.parse_args(args_)
     return args
 
+
 args = parse_args()
 target = eval(args.target)
 
-
-# In[42]:
-
-
-from pathlib import Path
-
 Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
-
-
-# In[43]:
-
-
-from pathlib import Path
-from argparse import Namespace
-import pandas as pd
-
-assert Namespace
 
 # Get all files with format '*.latency.csv' from root_dir
 # root_dir = Path("fig11-abalation-log")
@@ -46,10 +29,6 @@ root_dir = Path("result")
 latency_file_paths = sorted(list(root_dir.glob("*.latency.csv")))
 experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
-
-
-# In[44]:
-
 
 dfs = []
 namespaces = []
@@ -60,10 +39,6 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
     except pd.errors.EmptyDataError:
         pass
 
-
-# In[45]:
-
-
 big_df = pd.concat(dfs, ignore_index=True)
 big_df['ngpu'] = big_df['tp_prefill'] * big_df['pp_prefill'] + big_df['tp_decode'] * big_df['pp_decode']
 big_df['per_gpu_rate'] = big_df['rate'] / big_df['ngpu']
@@ -72,10 +47,7 @@ big_df['goodput@90'] = big_df.apply(
     axis=1,
 )
 
-
-
 model_type = big_df['model_type'].unique()[0]
-
 
 
 def can_fit_low_affinity_distserve(x):
@@ -103,15 +75,7 @@ def can_fit_low_affinity(x):
 
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
-
-# In[49]:
-
-
 big_df.sort_values(by=['backend', 'per_gpu_rate', 'tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode'])
-
-
-# In[50]:
-
 
 big_df['target_evaled'] = big_df['target'].apply(eval)
 figure_11_left_df = big_df[
@@ -135,16 +99,14 @@ figure_11_vllm_high = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
 ]
 
-if model_type == "OPT-13B": __tp=1
-if model_type == "OPT-66B": __tp=2
-if model_type == "OPT-175B": __tp=4
+if model_type == "OPT-13B": __tp = 1
+if model_type == "OPT-66B": __tp = 2
+if model_type == "OPT-175B": __tp = 4
 figure_11_vllm_low = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
     & (figure_11_left_df['pp_prefill'] == 1)
     & (figure_11_left_df['tp_prefill'] == __tp)
     ]
-
-
 
 
 # Find the best config that has the highest goodput@90 and attainment
@@ -159,7 +121,6 @@ def get_top_config(df):
         "pp_decode",
     ]]
     return r
-
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -183,9 +144,6 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
     return config_df['attainment'].tolist()
 
 
-
-import matplotlib.pyplot as plt
-
 # Plot a line chart with 4 curves
 # x-axis: per_gpu_rate
 # y-axis: attainment
@@ -202,8 +160,6 @@ plt.ylabel("SLO Attainment (%)")
 plt.legend()
 fig.savefig("figure/figure_11a.png")
 
-
-
 data_points = {
     "dist++": a,
     "dist": b,
@@ -214,4 +170,3 @@ with open("figure/figure_11a.json", "w") as f:
     import json
 
     json.dump(data_points, f)
-
