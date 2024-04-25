@@ -11,7 +11,7 @@ from simdistserve.benchmarks.search_configs import get_distserve_configs
 from simdistserve.constants import ModelTypes
 
 
-def main(num_node, num_gpu_per_node, is_dist_high: bool = True, run_parallel: bool = True):
+def main(num_node, num_gpu_per_node, is_dist_high: bool = True, run_parallel: bool = True, debug: bool = False):
     configs = get_distserve_configs(
         ModelTypes.opt_13b, num_node, num_gpu_per_node, is_dist_high
     )
@@ -30,7 +30,7 @@ def main(num_node, num_gpu_per_node, is_dist_high: bool = True, run_parallel: bo
         kwargs = dict(max_per_gpu_rate=5, pid=pid, esp=0.25, N=300, )
 
         if not run_parallel:
-            r = run_binary_search(*args, **kwargs)
+            r = run_binary_search(*args, **kwargs, debug=debug)
             print(f"config={config}, result={r}")
             continue
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     data = []
     for ngpu in [2, 4, 8, 16, 32]:
         start = time.perf_counter()
-        main(ngpu, 1, is_dist_high=True, run_parallel=run_parallel)
+        main(ngpu, 1, is_dist_high=True, run_parallel=run_parallel, debug=args.debug)
         end = time.perf_counter()
         duration = end - start
         data.append({
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     for ngpu_per_node, num_node in [(2, 1), (4, 1), (8, 1), (8, 2), (8, 4)]:
         ngpu = ngpu_per_node * num_node
         start = time.perf_counter()
-        main(num_node, ngpu_per_node, is_dist_high=False, run_parallel=run_parallel)
+        main(num_node, ngpu_per_node, is_dist_high=False, run_parallel=run_parallel, debug=args.debug)
         end = time.perf_counter()
         duration = end - start
         data.append({

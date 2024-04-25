@@ -17,6 +17,7 @@ def run_binary_search(
     pid=0,
     esp=0.5,
     N=1000,
+    debug=False,
 ):
     N = str(N)
     cpu_count = os.cpu_count()
@@ -85,6 +86,9 @@ def run_binary_search(
             end_time = time.time()
             time_durations.append((config, this_rate, end_time - start_time))
         except Exception as e:
+            if debug:
+                import traceback
+                traceback.print_exc()
             return None
 
         # Update the range
