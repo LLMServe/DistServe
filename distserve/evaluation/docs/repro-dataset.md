@@ -1,6 +1,6 @@
-# Dataset Reproduction Instructions
+# Dataset Preprocessing Instructions
 
-This file will guide you through the process of reproducing the dataset used in the paper, which mainly consists of two steps: downloading the raw datasets, and then preprocessing them.
+This doc will guide you through the dataset preprocessing procedure in our paper.
 
 We assume that your dataset directory is located at `$DATASET`. You may use `export DATASET=/path/to/dataset` to set the environment variable.
 

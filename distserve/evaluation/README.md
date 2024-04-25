@@ -8,8 +8,8 @@ well as all the necessary scripts to reproduce the experiments in the paper.
 ## Folder Structure
 
 This folder contains the following subfolders:
-- `0-test-single-forward-performance`: Scripts for testing the time consumption of a single forward pass of DistServe and vLLM. Used for: 1) verifying the efficiency of SwiftTransformer, which is DistServe's "data path". 2) generating a profiler database for fitting the time usage model.
-- `1-fit-time-usage`: Scripts for fitting the time usage model of DistServe.
+- `0-test-single-forward-performance`: Scripts for testing the time consumption of a single forward pass of DistServe and vLLM. Used for: 1) verifying the efficiency of SwiftTransformer, which is DistServe's "data path". 2) generating a profiler database for fitting the execution time estimation model.
+- `1-fit-time-usage`: Scripts for fitting the execution time estimation model of DistServe.
 - `2-benchmark-serving`: Scripts for benchmarking the online serving performance of DistServe, vLLM, and DeepSpeed-MII.
 - `Dockerfile.evaluation`: Dockerfile for building the image for artifact evaluation.
 
