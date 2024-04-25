@@ -22,9 +22,7 @@ def main(num_node, num_gpu_per_node, is_dist_high: bool = True):
     max_cpu_count = os.cpu_count() - 2
 
     processes = []
-    pbar = tqdm(configs)
     for pid, config in tqdm(enumerate(configs), total=len(configs)):
-        pbar.update(1)
 
         proc = Process(
             target=run_binary_search,
