@@ -26,7 +26,7 @@ from simdistserve.base.workload import (
 from simdistserve.clusters.disagg import DisaggCluster
 from simdistserve.clusters.vllm import VLLMCluster
 from simdistserve.constants import ModelTypes
-from simdistserve.estimators.memory_estimator import get_max_num_tokens
+from simdistserve.estimators.memory_estimator import get_max_num_tokens, is_model_runnable
 
 
 def parse_args(args_=None):
@@ -146,6 +146,9 @@ def main(args, outputs=None):
     #
     # Handle vllm in data processing
     #
+    if not is_model_runnable(model_type, TP_Prefill, PP_prefill):
+        raise ValueError(f"Model {model_type} is not runnable with TP={TP_Prefill}, PP={PP_prefill}")
+
     prefill_max_tokens = get_max_num_tokens(model_type, TP_Prefill, PP_prefill)
     if args.backend == 'vllm':
         TP_Decode = PP_decode = 0

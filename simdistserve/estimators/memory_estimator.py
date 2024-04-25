@@ -25,6 +25,14 @@ def load_profile_data():
 max_num_tokens_data = load_profile_data()
 
 
+def is_model_runnable(model: ModelTypes, tp: int, pp: int) -> bool:
+    if model not in max_num_tokens_data:
+        return False
+    if (tp, pp) not in max_num_tokens_data[model]:
+        return False
+    return True
+
+
 def get_max_num_tokens(model: ModelTypes, tp: int, pp: int) -> int:
     model: str = ModelTypes.formalize_model_name(model)
     max_num_tokens = max_num_tokens_data[model][(tp, pp)]
