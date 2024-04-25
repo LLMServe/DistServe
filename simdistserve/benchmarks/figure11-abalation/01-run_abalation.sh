@@ -1,69 +1,11 @@
 #!/bin/bash
 
-# if model is opt_66b, then set these variables
-
-workloads=$1
-
-# See paper Table 1 and Figure 9 for the arguments
-if [ $workloads = "opt_13b_sharegpt" ]; then
-    total_gpu=4
-    per_gpu_rate='[1,2,3,4,5]'
-    base_N='[100]'
-    model="opt_13b"
-    prefill_target=200
-    decode_target=100
-    chosen_per_gpu_rate=2
-elif [ $workloads = "opt_13b_sharegpt_32gpu" ]; then
-    total_gpu=32
-    per_gpu_rate='[1,2,3,4,5]'
-    base_N='[100]'
-    model="opt_13b"
-    prefill_target=200
-    decode_target=100
-    chosen_per_gpu_rate=2
-elif [ $workloads = "opt_66b_sharegpt" ]; then
-    total_gpu=8
-    per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
-    base_N='[25]'
-    model="opt_66b"
-    prefill_target=400
-    decode_target=100
-    chosen_per_gpu_rate=0.25
-elif [ $workloads = "opt_66b_sharegpt_32gpu" ]; then
-    total_gpu=32
-    per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
-    base_N='[25]'
-    model="opt_66b"
-    prefill_target=400
-    decode_target=100
-    chosen_per_gpu_rate=0.25
-elif [ $workloads = "opt_175b_sharegpt" ]; then
-    total_gpu=32
-    per_gpu_rate='[0.03125, 0.0625, 0.09375, 0.125, 0.15625, 0.1875, 0.21875, 0.25, 0.28125, 0.3125]'
-    base_N='[25]'
-    model="opt_175b"
-    prefill_target=4000
-    decode_target=200
-    chosen_per_gpu_rate=0.25
-elif [ $workloads = "opt_66b_humaneval" ]; then
-    total_gpu=8
-    per_gpu_rate='[0.125, 0.375, 0.625, 0.875, 1.125, 1.375, 1.625, 1.875, 2.125]'
-    base_N='[50]'
-    model="opt_66b"
-    prefill_target=125
-    decode_target=200
-elif [ $workloads = "opt_66b_longbench" ]; then
-    total_gpu=8
-    per_gpu_rate='[0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625]'
-    base_N='[25]'
-    model="opt_66b"
-    prefill_target=1500
-    decode_target=150
-else
-    echo "Usage: bash 01-run_abalation.sh [opt_13b_sharegpt|opt_66b_sharegpt|opt_175b_sharegpt|opt_66b_humaneval|opt_66b_longbench]"
-    exit 1
-fi
-
+total_gpu=32
+per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
+base_N='[25]'
+model="opt_66b"
+prefill_target=400
+decode_target=100
 
 
 # Abalation study with DistServe and vLLM
@@ -107,10 +49,3 @@ python ../simulate_multi.py \
 --file-prefix $file_prefix --base-N $base_N
 
 
-
-# Draw figure
-mkdir -p visual figure
-target="($prefill_target,$decode_target)"
-python 02-draw_rate_abalation.py --target "$target"
-python 03-draw_slo_abalation.py --target "$target" --per_gpu_rate $chosen_per_gpu_rate
-python 04-draw_abalation_curve.py --rates "$per_gpu_rate"
