@@ -95,7 +95,7 @@ def run_binary_search(
         low = this_rate
         best_per_gpu_rate = this_rate
         pass
-
+    print(f"pid={pid} {config=} {best_per_gpu_rate=}")
     return best_per_gpu_rate
 
 
