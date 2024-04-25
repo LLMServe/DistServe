@@ -14,7 +14,7 @@ import time
 import random
 
 def request_pod(api_key: str, public_key: str, num_gpus: int):
-    data = '{"query": "mutation { podFindAndDeployOnDemand( input: { cloudType: SECURE, gpuCount: ' + str(num_gpus) + '8, volumeInGb: 0, containerDiskInGb: 512, minVcpuCount: 64, minMemoryInGb: 512, gpuTypeId: \\"NVIDIA A100-SXM4-80GB\\", name: \\"distserve-evaluation\\", startJupyter: false, startSsh: true, templateId: \\"xbivg6n3b6\\", volumeKey: null, dockerArgs: \\"\\", ports: \\"8080/http,22/tcp,8000/tcp\\", dataCenterId: \\"US-OR-1\\", volumeMountPath: \\"/workspace\\", networkVolumeId:\\"dg0br51h50\\", env: [{ key: \\"PUBLIC_KEY\\", value: \\"' + public_key + '\\" }] } ) { id imageName env machineId machine { podHostId } } }"}'
+    data = '{"query": "mutation { podFindAndDeployOnDemand( input: { cloudType: SECURE, gpuCount: ' + str(num_gpus) + ', volumeInGb: 0, containerDiskInGb: 512, minVcpuCount: 32, minMemoryInGb: 512, gpuTypeId: \\"NVIDIA A100-SXM4-80GB\\", name: \\"distserve-evaluation\\", startJupyter: false, startSsh: true, templateId: \\"xbivg6n3b6\\", volumeKey: null, dockerArgs: \\"\\", ports: \\"8080/http,22/tcp,8000/tcp\\", dataCenterId: \\"US-OR-1\\", volumeMountPath: \\"/workspace\\", networkVolumeId:\\"dg0br51h50\\", env: [{ key: \\"PUBLIC_KEY\\", value: \\"' + public_key + '\\" }] } ) { id imageName env machineId machine { podHostId } } }"}'
     response = requests.post('https://api.runpod.io/graphql?api_key=' + api_key, headers={'content-type': 'application/json'}, data=data)
     print(response.text)
     json_data = response.json()
