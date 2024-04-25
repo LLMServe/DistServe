@@ -122,43 +122,11 @@ TODO: Command
 
 *Compute Time: 5 min*
 
-The abalation study is sufficient to run on CPU-only instance. 
-
-To allocate a CPU instance in RunPod, follow these steps:
-
-- Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
-- Click `Storage` in the left toolbar. Select `OSDI24 DistServe Abalation` and click Deploy.
-- Select the `CPU` on the top. Then select `Compute-Optimized` instance with `32 vCPUs`. 
-- Name the pod, for example `OSDI Abalation Eval`
-- Check the pod template is `Runpod Ubuntu (runpod/base:0.5.1-cpu)`
-- Click `Deploy On-Demand`
-
-
-
-#### Run Abalation Study
-
-Once you connect to the instance, run the following to start benchmarking:
+The abalation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` where 32 vCPU instance is available.
 
 ```bash
-# Enable the python virtual environment
-cd /workspace
-source venv/bin/activate
-
-# Run abalation study
-cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation
-rm -rf result visual figure # clean existing results if exists
-bash 01-run_abalation.sh opt_13b_sharegpt
-
-# Draw figures
-mkdir -p visual figure
-python 02-draw_rate_abalation.py --target "(200, 100)"
-python 03-draw_slo_abalation.py --target "(200, 100)" --per_gpu_rate 1
-python 04-draw_abalation_curve.py --rates "[1,2,3,4,5]"
-
-# See the figure `abalation.png`
-cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation/figure
+micromamba activate distserve
+bash /app/distserve/simdistserve/benchmarks/figure11-abalation/run_abalation.sh
 ```
 
-
-
-TODO: How should reviewer see the file?
+Ideally this should generate a result in `/workspace/abalation.png`
