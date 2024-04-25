@@ -5,6 +5,7 @@ Output a JSON (list) where each item is the lifecycle for a request.
 """
 import argparse
 import json
+import os
 import random
 from pathlib import Path
 from typing import Literal, Union
@@ -100,9 +101,10 @@ def load_workload(workload, N, rate, cv, seed, process: Literal["fixed", "gamma"
     random.seed(seed)
     np.random.seed(seed)
     if workload in ['sharegpt', 'longbench', 'humaneval']:
-        dataset_root = Path(__file__).parent.parent
-        # TODO: Change this to use the `.ds` suffix datasets.
-        dataset_file = dataset_root / "data" / f"{workload}.dataset"
+        dataset_root = os.environ.get('DATASET', '/app/dataset')
+        dataset_root = Path(dataset_root)
+        assert dataset_root.exists(), f"Dataset root {dataset_root} does not exist."
+        dataset_file = dataset_root / f"{workload}.ds"
         check_dataset_existence(dataset_file)
         requests = sample_requests(dataset_file, N)
 

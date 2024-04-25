@@ -31,7 +31,7 @@ Now you should have `HumanEval.jsonl`, `ShareGPT_V3_unfiltered_cleaned_split.jso
 
 
 
-## Step 2a. (In GPU Instance) Preprocess datasets
+## Step 2. Preprocess datasets
 
 *3 human-minutes + 10 compute-minutes*
 
@@ -52,29 +52,4 @@ python3 2-benchmark-serving/0-prepare-dataset.py --dataset longbench --dataset-p
 
 Now you should have `sharegpt.ds`, `humaneval.ds`, and `longbench.ds` under `$DATASET/`.
 
-
-
-## Step 2b. (In CPU Instance) Preprocess datasets
-
-*3 human-minutes + 10 compute-minutes.*
-
-Now we start to preprocess the datasets:
-
-```bash
-source /workspace/venv/activate
-cd /workspace/simdistserve/
-
-# Check var $DATASET
-DATASET=/workspace/simdistserve/data
-echo $DATASET
-
-# Preprocess the "ShareGPT" dataset
-python prepare-dataset.py --dataset sharegpt --dataset-path $DATASET/raw/ShareGPT_V3_unfiltered_cleaned_split.json --tokenizer facebook/opt-13b --output-path $DATASET/sharegpt.dataset
-
-# Preprocess the "HumanEval" dataset
-python prepare-dataset.py --dataset humaneval --dataset-path $DATASET/raw/HumanEval.jsonl --tokenizer facebook/opt-13b --output-path $DATASET/humaneval.dataset
-
-# Preprocess the "LongBench" dataset
-python prepare-dataset.py --dataset longbench --dataset-path $DATASET/raw/longbench/ --tokenizer facebook/opt-13b --output-path $DATASET/longbench.dataset
-```
 
