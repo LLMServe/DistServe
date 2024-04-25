@@ -141,16 +141,6 @@ def main(args, outputs=None):
     PP_decode = args.pp_decode
 
     #
-    # Ensure we don't run excessive experiments
-    #
-    if model_type == ModelTypes.opt_66b:
-        ngpu_prefill = TP_Prefill * PP_prefill
-        ngpu_decode = TP_Decode * PP_decode
-        if ngpu_decode < 2 or ngpu_prefill < 2:
-            return
-        pass
-
-    #
     # Handle vllm in data processing
     #
     prefill_max_tokens = get_max_num_tokens(model_type, TP_Prefill, PP_prefill)
