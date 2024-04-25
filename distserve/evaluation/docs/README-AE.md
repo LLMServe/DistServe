@@ -130,7 +130,7 @@ To allocate a CPU instance in RunPod, follow these steps:
 - Check the pod template is `Runpod Ubuntu (runpod/base:0.5.1-cpu)`
 - Click `Deploy On-Demand`
 
-#### Run Benchmark
+#### Run Abalation Study
 
 Once you connect to the instance, run the following to start benchmarking:
 
@@ -139,14 +139,14 @@ Once you connect to the instance, run the following to start benchmarking:
 cd /workspace
 source venv/bin/activate
 
-# Run the benchmark
-cd /workspace/DistServe/simdistserve/benchmarks
+# Run abalation study
+cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation
 bash run_abalation_13b_sharegpt.sh
 
 # See the figure `abalation.png`
-cd /workspace/DistServe/simdistserve/benchmarks/figure
+cd /workspace/DistServe/simdistserve/benchmarks/figure11-abalation/figure
 ```
 
-
-
 TODO: Dataset preparation. Currently the abalation study uses `.dataset` dataset under `/workspace/DistServe/simdistserve/data`. Should reuse the dataset preparation doc.
+
+TODO: How should reviewer see the file?
