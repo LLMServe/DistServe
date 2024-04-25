@@ -174,3 +174,4 @@ cython_debug/
 .DS_Store
 logs
 /simdistserve/benchmarks/figure11-abalation/result
+/simdistserve/benchmarks/figure11-abalation/visual
