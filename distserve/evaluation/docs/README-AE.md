@@ -119,16 +119,29 @@ If you successfully obtain one 8xA100-SXM-80GB machine, run
 TODO: Command
 
 ### Ablation Studies (Section 6.4, Figure. 11)
+
+*Compute Time: 5 min*
+
 The abalation study is sufficient to run on CPU-only instance. 
 
 To allocate a CPU instance in RunPod, follow these steps:
 
 - Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
-- Click `Storage` in the left toolbar. Find the `OSDI24 DistServe Abalation` and click `Deploy`
+- Click `Pods` in the left toolbar.
 - Select the `CPU` on the top. Then select `Compute-Optimized` instance with `32 vCPUs`. 
 - Name the pod, for example `OSDI Abalation Eval`
 - Check the pod template is `Runpod Ubuntu (runpod/base:0.5.1-cpu)`
 - Click `Deploy On-Demand`
+
+#### Prepare Environmnet
+
+```bash
+apt update
+cd /workspace
+
+```
+
+
 
 #### Run Abalation Study
 
