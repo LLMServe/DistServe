@@ -100,10 +100,12 @@ def run_binary_search(
 
 
 if __name__ == '__main__':
+    args = parse_args()
     run_binary_search(
         ModelTypes.opt_13b,
         (1, 1, 1, 1, 1),
         "distserve",
         (200, 100, 90, 90),
         max_per_gpu_rate=16,
+        is_debug=args.debug,
     )
