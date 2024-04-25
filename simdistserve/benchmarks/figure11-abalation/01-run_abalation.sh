@@ -29,6 +29,14 @@ elif [ $workloads == "opt_66b_sharegpt" ]; then
     prefill_target=400
     decode_target=100
     chosen_per_gpu_rate=0.25
+elif [ $workloads == "opt_66b_sharegpt_32gpu" ]; then
+    total_gpu=32
+    per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
+    base_N='[25]'
+    model="opt_66b"
+    prefill_target=400
+    decode_target=100
+    chosen_per_gpu_rate=0.25
 elif [ $workloads == "opt_175b_sharegpt" ]; then
     total_gpu=32
     per_gpu_rate='[0.03125, 0.0625, 0.09375, 0.125, 0.15625, 0.1875, 0.21875, 0.25, 0.28125, 0.3125]'

@@ -96,7 +96,7 @@ if __name__ == "__main__":
     cmds = []
     for workload in workloads:
         for base_N in base_Ns:
-        # for N in Ns:
+        # for N in Ns: # TODO: Use `Ns` or `base_Ns` - determine here.
             for tp_prefill, pp_prefill, tp_decode, pp_decode in product(
                 tp_prefills, pp_prefills, tp_decodes, pp_decodes
             ):
