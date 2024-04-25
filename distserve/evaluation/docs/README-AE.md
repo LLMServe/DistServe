@@ -127,7 +127,7 @@ The abalation study is sufficient to run on CPU-only instance.
 To allocate a CPU instance in RunPod, follow these steps:
 
 - Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
-- Click `Pods` in the left toolbar.
+- Click `Storage` in the left toolbar. Select `OSDI24 DistServe Abalation` and click Deploy.
 - Select the `CPU` on the top. Then select `Compute-Optimized` instance with `32 vCPUs`. 
 - Name the pod, for example `OSDI Abalation Eval`
 - Check the pod template is `Runpod Ubuntu (runpod/base:0.5.1-cpu)`
