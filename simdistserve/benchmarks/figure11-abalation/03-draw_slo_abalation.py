@@ -21,6 +21,14 @@ if not is_notebook_mode:
     chosen_per_gpu_rate = args.per_gpu_rate
     if args.target:
         target = eval(args.target)
+        
+
+use_plotly = False
+try:
+    import plotly.graph_objects as go
+    use_plotly = is_notebook_mode
+except:
+    pass
 
 
 # In[ ]:
@@ -207,131 +215,134 @@ big_df = big_df.sort_values(by=['per_gpu_rate', 'slo', ], ascending=False)
 # In[ ]:
 
 
-import plotly.graph_objects as go
-
-fig = go.Figure()
-configs = figure_11_distserve_high[['tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode']].drop_duplicates()
-slo_vals = list(big_df['slo'].unique())
-
-df = figure_11_distserve_high
-for tp_prefill, pp_prefill, tp_decode, pp_decode in configs.values:
-    config_df = df[
-        (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill) &
-        (df['tp_decode'] == tp_decode) & (df['pp_decode'] == pp_decode)
-        ]
-    config_df = config_df.sort_values(by=['slo'], ascending=False)
-    # plot this inside a plotly plot
-    fig.add_trace(go.Scatter(
-        x=config_df['slo'], y=config_df['attainment'],
-        mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-distserve"
-    ))
-
-# fig add title
-fig.update_layout(
-    title="DistServe",
-    xaxis_title="Per-GPU Rate (tokens/s)",
-    yaxis_title="Attainment (%)",
-    legend_title="Configuration"
-)
-fig.update_layout(
-    xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
-)  # Set the range manually
-
-# Export to html
-fig.write_html("visual/figure_11_distserve_high.slo.html")
-if is_notebook_mode:
-    fig.show()
-
-
-# In[ ]:
-
-
-import plotly.graph_objects as go
-
-fig = go.Figure()
-configs = figure_11_vllm_high[['tp_prefill', 'pp_prefill']].drop_duplicates()
-slo_vals = list(big_df['slo'].unique())
-
-df = figure_11_vllm_high
-for tp_prefill, pp_prefill in configs.values:
-    config_df = df[
-        (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill)
-        ]
-    config_df = config_df.sort_values(by=['slo'], ascending=False)
-    # plot this inside a plotly plot
-    fig.add_trace(go.Scatter(
-        x=config_df['slo'], y=config_df['attainment'],
-        mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}-vLLM"
-    ))
-
-# fig add title
-fig.update_layout(
-    title="vLLM",
-    xaxis_title="Per-GPU Rate (tokens/s)",
-    yaxis_title="Attainment (%)",
-    legend_title="Configuration"
-)
-fig.update_layout(
-    xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
-)  # Set the range manually
-
-fig.write_html("visual/figure_11_vllm_high.slo.html")
-if is_notebook_mode:
-    fig.show()
-# Export to html
+if use_plotly:
+    import plotly.graph_objects as go
+    
+    fig = go.Figure()
+    configs = figure_11_distserve_high[['tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode']].drop_duplicates()
+    slo_vals = list(big_df['slo'].unique())
+    
+    df = figure_11_distserve_high
+    for tp_prefill, pp_prefill, tp_decode, pp_decode in configs.values:
+        config_df = df[
+            (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill) &
+            (df['tp_decode'] == tp_decode) & (df['pp_decode'] == pp_decode)
+            ]
+        config_df = config_df.sort_values(by=['slo'], ascending=False)
+        # plot this inside a plotly plot
+        fig.add_trace(go.Scatter(
+            x=config_df['slo'], y=config_df['attainment'],
+            mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-distserve"
+        ))
+    
+    # fig add title
+    fig.update_layout(
+        title="DistServe",
+        xaxis_title="Per-GPU Rate (tokens/s)",
+        yaxis_title="Attainment (%)",
+        legend_title="Configuration"
+    )
+    fig.update_layout(
+        xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
+    )  # Set the range manually
+    
+    # Export to html
+    fig.write_html("visual/figure_11_distserve_high.slo.html")
+    if is_notebook_mode:
+        fig.show()
 
 
 # In[ ]:
 
 
-import plotly.graph_objects as go
+if use_plotly:
+    import plotly.graph_objects as go
+    
+    fig = go.Figure()
+    configs = figure_11_vllm_high[['tp_prefill', 'pp_prefill']].drop_duplicates()
+    slo_vals = list(big_df['slo'].unique())
+    
+    df = figure_11_vllm_high
+    for tp_prefill, pp_prefill in configs.values:
+        config_df = df[
+            (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill)
+            ]
+        config_df = config_df.sort_values(by=['slo'], ascending=False)
+        # plot this inside a plotly plot
+        fig.add_trace(go.Scatter(
+            x=config_df['slo'], y=config_df['attainment'],
+            mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}-vLLM"
+        ))
+    
+    # fig add title
+    fig.update_layout(
+        title="vLLM",
+        xaxis_title="Per-GPU Rate (tokens/s)",
+        yaxis_title="Attainment (%)",
+        legend_title="Configuration"
+    )
+    fig.update_layout(
+        xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
+    )  # Set the range manually
+    
+    fig.write_html("visual/figure_11_vllm_high.slo.html")
+    if is_notebook_mode:
+        fig.show()
+    # Export to html
 
-fig = go.Figure()
-configs = figure_11_distserve_high[['tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode']].drop_duplicates()
-slo_vals = list(big_df['slo'].unique())
 
-df = figure_11_distserve_high
-for tp_prefill, pp_prefill, tp_decode, pp_decode in configs.values:
-    config_df = df[
-        (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill) &
-        (df['tp_decode'] == tp_decode) & (df['pp_decode'] == pp_decode)
-        ]
-    config_df = config_df.sort_values(by=['slo'], ascending=False)
-    # plot this inside a plotly plot
-    fig.add_trace(go.Scatter(
-        x=config_df['slo'], y=config_df['attainment'],
-        mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-distserve"
-    ))
+# In[ ]:
 
-configs = figure_11_vllm_high[['tp_prefill', 'pp_prefill']].drop_duplicates()
-slo_vals = list(big_df['slo'].unique())
 
-df = figure_11_vllm_high
-for tp_prefill, pp_prefill in configs.values:
-    config_df = df[
-        (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill)
-        ]
-    config_df = config_df.sort_values(by=['slo'], ascending=False)
-    # plot this inside a plotly plot
-    fig.add_trace(go.Scatter(
-        x=config_df['slo'], y=config_df['attainment'],
-        mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}-vLLM"
-    ))
-
-# fig add title
-fig.update_layout(
-    title="DistServe and vLLM",
-    xaxis_title="Per-GPU Rate (tokens/s)",
-    yaxis_title="Attainment (%)",
-    legend_title="Configuration"
-)
-fig.update_layout(
-    xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
-)  # Set the range manually
-fig.write_html("visual/figure_11_distserve_vllm_high.slo.html")
-if is_notebook_mode:
-    fig.show()
-# Export to html
+if use_plotly:
+    import plotly.graph_objects as go
+    
+    fig = go.Figure()
+    configs = figure_11_distserve_high[['tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode']].drop_duplicates()
+    slo_vals = list(big_df['slo'].unique())
+    
+    df = figure_11_distserve_high
+    for tp_prefill, pp_prefill, tp_decode, pp_decode in configs.values:
+        config_df = df[
+            (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill) &
+            (df['tp_decode'] == tp_decode) & (df['pp_decode'] == pp_decode)
+            ]
+        config_df = config_df.sort_values(by=['slo'], ascending=False)
+        # plot this inside a plotly plot
+        fig.add_trace(go.Scatter(
+            x=config_df['slo'], y=config_df['attainment'],
+            mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-distserve"
+        ))
+    
+    configs = figure_11_vllm_high[['tp_prefill', 'pp_prefill']].drop_duplicates()
+    slo_vals = list(big_df['slo'].unique())
+    
+    df = figure_11_vllm_high
+    for tp_prefill, pp_prefill in configs.values:
+        config_df = df[
+            (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill)
+            ]
+        config_df = config_df.sort_values(by=['slo'], ascending=False)
+        # plot this inside a plotly plot
+        fig.add_trace(go.Scatter(
+            x=config_df['slo'], y=config_df['attainment'],
+            mode='lines+markers', name=f"p{tp_prefill}{pp_prefill}-vLLM"
+        ))
+    
+    # fig add title
+    fig.update_layout(
+        title="DistServe and vLLM",
+        xaxis_title="Per-GPU Rate (tokens/s)",
+        yaxis_title="Attainment (%)",
+        legend_title="Configuration"
+    )
+    fig.update_layout(
+        xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
+    )  # Set the range manually
+    fig.write_html("visual/figure_11_distserve_vllm_high.slo.html")
+    if is_notebook_mode:
+        fig.show()
+    # Export to html
 
 
 # In[ ]:
@@ -374,26 +385,27 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
 # In[ ]:
 
 
-import plotly.graph_objects as go
-
-fig = go.Figure()
-add_plotly_trace(fig, figure_11_distserve_high, "disthigh")
-add_plotly_trace(fig, figure_11_distserve_low, "distlow")
-add_plotly_trace(fig, figure_11_vllm_high, "vllm++")
-add_plotly_trace(fig, figure_11_vllm_low, "vllm")
-fig.update_layout(
-    title=f"Figure 11: Abalation Study - SLO with per-GPU rate = {chosen_per_gpu_rate}"
-          f"<br>"
-          f"<sup>"
-          f"The figure shows that DistHigh > DistLow > vLLM++ > vLLM (vLLM++ and vLLM overlaps) </sup>",
-    xaxis_title="Per-GPU Rate (tokens/s)",
-    yaxis_title="Attainment (%)",
-    xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
-    legend_title="Configuration"
-)
-fig.write_html("visual/figure_11b.html")
-if is_notebook_mode:
-    fig.show()
+if use_plotly:
+    import plotly.graph_objects as go
+    
+    fig = go.Figure()
+    add_plotly_trace(fig, figure_11_distserve_high, "disthigh")
+    add_plotly_trace(fig, figure_11_distserve_low, "distlow")
+    add_plotly_trace(fig, figure_11_vllm_high, "vllm++")
+    add_plotly_trace(fig, figure_11_vllm_low, "vllm")
+    fig.update_layout(
+        title=f"Figure 11: Abalation Study - SLO with per-GPU rate = {chosen_per_gpu_rate}"
+              f"<br>"
+              f"<sup>"
+              f"The figure shows that DistHigh > DistLow > vLLM++ > vLLM (vLLM++ and vLLM overlaps) </sup>",
+        xaxis_title="Per-GPU Rate (tokens/s)",
+        yaxis_title="Attainment (%)",
+        xaxis=dict(range=[max(slo_vals), min(slo_vals)]),
+        legend_title="Configuration"
+    )
+    fig.write_html("visual/figure_11b.html")
+    if is_notebook_mode:
+        fig.show()
 
 
 # In[ ]:
