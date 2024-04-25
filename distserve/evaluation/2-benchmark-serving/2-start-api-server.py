@@ -57,8 +57,7 @@ conda activate vllm;
 python -u -m vllm.entrypoints.api_server \\
     --host 0.0.0.0 --port {port} \\
     --engine-use-ray --worker-use-ray --disable-log-requests \\
-    --model {args.model} --dtype float16 \\
-    --max-paddings 256 \\
+    --model {args.model} --dtype half \\
     {"--load-format dummy" if use_dummy_weight else ""} \\
     -tp {tp_world_size} \\
     --block-size 16 --seed 0 \\
@@ -108,7 +107,7 @@ python -m distserve.api_server.distserve_api_server \\
     \\
     --context-sched-policy fcfs \\
     --context-max-batch-size 128 \\
-    --context-max-tokens-per-batch 32768 \\
+    --context-max-tokens-per-batch 8192 \\
     \\
     --decoding-sched-policy fcfs \\
     --decoding-max-batch-size 1024 \\
