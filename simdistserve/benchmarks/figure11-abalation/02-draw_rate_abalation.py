@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[7]:
 
 
 target = '(400.0, 100.0)'
@@ -23,7 +23,7 @@ if not is_notebook_mode:
 target = eval(target)
 
 
-# In[ ]:
+# In[8]:
 
 
 from pathlib import Path
@@ -32,7 +32,7 @@ Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
 
 
-# In[ ]:
+# In[9]:
 
 
 from pathlib import Path
@@ -49,7 +49,7 @@ experiment_log_paths = sorted(list(root_dir.glob("*.log")))
 columns = ['backend', 'rate', 'target', 'attainment', 'latency']
 
 
-# In[ ]:
+# In[10]:
 
 
 dfs = []
@@ -68,7 +68,7 @@ for latency_file_path, experiment_log_path in zip(latency_file_paths, experiment
         pass
 
 
-# In[ ]:
+# In[11]:
 
 
 big_df = pd.concat(dfs, ignore_index=True)
@@ -80,13 +80,20 @@ big_df['goodput@90'] = big_df.apply(
 )
 
 
-# In[ ]:
+# In[27]:
+
+
+model_type = big_df['model_type'].unique()[0]
+model_type
+
+
+# In[12]:
 
 
 big_df
 
 
-# In[ ]:
+# In[13]:
 
 
 max_machine = 4
@@ -119,13 +126,13 @@ def can_fit_low_affinity(x):
 big_df['low_affin'] = big_df.apply(can_fit_low_affinity, axis=1)
 
 
-# In[ ]:
+# In[14]:
 
 
 big_df.sort_values(by=['backend', 'per_gpu_rate', 'tp_prefill', 'pp_prefill', 'tp_decode', 'pp_decode'])
 
 
-# In[ ]:
+# In[28]:
 
 
 big_df['target_evaled'] = big_df['target'].apply(eval)
@@ -149,44 +156,48 @@ figure_11_distserve_low = figure_11_left_df[
 figure_11_vllm_high = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
 ]
+
+if model_type == "OPT-13B": __tp=1
+if model_type == "OPT-66B": __tp=2
+if model_type == "OPT-175B": __tp=4
 figure_11_vllm_low = figure_11_left_df[
     (figure_11_left_df['backend'] == 'vllm')
     & (figure_11_left_df['pp_prefill'] == 1)
-    & (figure_11_left_df['tp_prefill'] == 1)
+    & (figure_11_left_df['tp_prefill'] == __tp)
     ]
 
 
-# In[ ]:
+# In[29]:
 
 
 figure_11_distserve_high
 
 
-# In[ ]:
+# In[30]:
 
 
 figure_11_distserve_low
 
 
-# In[ ]:
+# In[31]:
 
 
 figure_11_vllm_high
 
 
-# In[ ]:
+# In[32]:
 
 
 figure_11_vllm_low
 
 
-# In[ ]:
+# In[32]:
 
 
 
 
 
-# In[ ]:
+# In[33]:
 
 
 # Plot the `figure_11_distserve_high`for some configurations
@@ -225,7 +236,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[ ]:
+# In[34]:
 
 
 # Plot the `figure_11_vllm_high`for some configurations
@@ -262,7 +273,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[ ]:
+# In[35]:
 
 
 import plotly.graph_objects as go
@@ -320,7 +331,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[ ]:
+# In[36]:
 
 
 # Find the best config that has the highest goodput@90 and attainment
@@ -357,7 +368,7 @@ def add_plotly_trace(fig, df: 'DataFrame', trace: str):
     return
 
 
-# In[ ]:
+# In[37]:
 
 
 import plotly.graph_objects as go
@@ -379,7 +390,7 @@ if is_notebook_mode:
     fig.show()
 
 
-# In[ ]:
+# In[38]:
 
 
 def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
@@ -403,7 +414,7 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
     return config_df['attainment'].tolist()
 
 
-# In[ ]:
+# In[39]:
 
 
 import matplotlib.pyplot as plt
@@ -427,7 +438,7 @@ if is_notebook_mode:
     plt.show()
 
 
-# In[ ]:
+# In[40]:
 
 
 data_points = {
