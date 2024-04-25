@@ -4,7 +4,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-target = '(200.0, 100.0)'
+target = '(400.0, 100.0)'
 
 max_machine = 4
 max_gpu_per_node = 8
