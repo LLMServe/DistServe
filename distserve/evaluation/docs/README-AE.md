@@ -147,3 +147,6 @@ bash run_abalation_13b_sharegpt.sh
 cd /workspace/DistServe/simdistserve/benchmarks/figure
 ```
 
+
+
+TODO: Dataset preparation. Currently the abalation study uses `.dataset` dataset under `/workspace/DistServe/simdistserve/data`. Should reuse the dataset preparation doc.
