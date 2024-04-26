@@ -73,6 +73,7 @@ async def send_request(
     output_len: int,
     best_of: int,
     use_beam_search: bool,
+    verbose: bool
 ) -> RequestResult:
     global pbar
     if backend == "deepspeed":
@@ -88,11 +89,13 @@ async def send_request(
         request_start_time = time.perf_counter()
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=3*3600)) as session:
             token_timestamps = []
+            last_data = b""
             try:
                 async with session.post(url=api_url, json=payload) as response:
                     if response.status == 200:
                         async for data in response.content.iter_any():
                             token_timestamps.append(time.perf_counter())
+                            last_data = data
                         complete_time = time.perf_counter()
                     else:
                         print(response)
@@ -103,6 +106,10 @@ async def send_request(
                 print(e)
                 sys.exit(1)
         request_end_time = time.perf_counter()
+        
+        if verbose:
+            last_data = last_data.decode("utf-8")
+            print(f"Prompt: {prompt}, Output: {last_data}")
         
         pbar.update(1)
         return RequestResult(
@@ -151,6 +158,8 @@ async def send_request(
                     print("Failed to parse the response:")
                     print(output)
                     continue
+                if verbose:
+                    print(f"Prompt: {prompt}\n\nOutput: {output['text']}")
 
                 # Re-send the request if it failed.
                 if "error" not in output:
@@ -182,6 +191,7 @@ async def benchmark(
     request_rate: float,
     request_cv: float = 1.0,
     process_name: str = "possion",
+    verbose: bool = False
 ) -> List[RequestResult]:
     tasks: List[asyncio.Task] = []
     async for request in get_request(
@@ -196,6 +206,7 @@ async def benchmark(
                 request.output_len,
                 best_of,
                 use_beam_search,
+                verbose
             )
         )
         tasks.append(task)
@@ -227,6 +238,7 @@ def main(args: argparse.Namespace):
             args.request_rate,
             args.request_cv,
             args.process_name,
+            args.verbose
         )
     )
     benchmark_end_time = time.time()
@@ -302,6 +314,11 @@ if __name__ == "__main__":
         type=str,
         default=None,
         help="Exp result file will be named as <exp-result-prefix>-<num-prompts>-<req-rate>.exp (default: <backend>)"
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print verbose logs (prompts and outputs)."
     )
     
     args = parser.parse_args()

@@ -60,7 +60,7 @@ RUN --mount=type=cache,target=/app/vllm/build \
     eval "$(micromamba shell hook --shell bash)" && \
     micromamba activate vllm && \
     cd /app/vllm && \
-    export MAX_JOBS=5 && \
+    export MAX_JOBS=8 && \
     pip install -e . -v
 
 # Set up env for DeepSpeed-MII
