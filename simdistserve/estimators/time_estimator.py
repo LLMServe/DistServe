@@ -33,6 +33,7 @@ def get_prefill_time(num_tokens=None, pp=1, bs=1, decode_bs=0, model_type=ModelT
         params = vllm_profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]
         a, b, c = params["prefill"]
         f = 1.4
+
     a, b, c = (a * f, b * f, c * f)
     pp_factor = 1 / pp
     pp_const = 1 * pp  # TODO: Modulate the PP overhead
@@ -54,6 +55,7 @@ def get_decode_time(num_requests, pp=1, model_type=ModelTypes.opt_13b, TP=1, tok
             a, b, c = params["decoding_smallbs"]
         else:
             a, b, c = params["decoding_largebs"]
+        f = 1
     else:
         params = vllm_profile_data[ModelTypes.formalize_model_name(model_type)][str(TP)]
         threshold = params[
@@ -62,6 +64,7 @@ def get_decode_time(num_requests, pp=1, model_type=ModelTypes.opt_13b, TP=1, tok
             a, b, c = params["decoding_smallbs"]
         else:
             a, b, c = params["decoding_largebs"]
+        f = 1.2
         pass
     pp_factor = 1 / pp
     # pp_const = 1 * pp  # TODO: Modulate the PP overhead
@@ -70,4 +73,5 @@ def get_decode_time(num_requests, pp=1, model_type=ModelTypes.opt_13b, TP=1, tok
 
     delay = a + b * num_total_tokens + c * batch_size
     delay = delay * pp_factor + pp_const
+    delay *= f
     return delay
