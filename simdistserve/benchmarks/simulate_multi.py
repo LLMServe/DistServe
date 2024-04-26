@@ -9,6 +9,11 @@ from typing import List
 
 import tqdm
 
+# FIXME: Ensure runpod can run this without trouble.
+#  Runpod should supposedly pass the env variable `RUNPOD_CPU_COUNT`
+#  into the container, but not found (possibly due to docker template).
+MAX_CONCURRENT_PROCS = min(os.cpu_count(), 32) - 1
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -131,7 +136,8 @@ if __name__ == "__main__":
 
     # Run and wait for all subprocesses to finish
     procs = []
-    max_concurrent_procs = min(os.cpu_count(), 32) - 1
+
+    max_concurrent_procs = MAX_CONCURRENT_PROCS
     for cmd, file_prefix in tqdm.tqdm(cmds):
         if len(procs) >= max_concurrent_procs:
             while True:

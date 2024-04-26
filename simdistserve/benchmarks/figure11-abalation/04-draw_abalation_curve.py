@@ -39,7 +39,8 @@ plt.plot(rates, distllm_real_SLO_att, label='DistLLM-Low', marker="o", markersiz
 plt.plot(rates, vllm_plus_SLO_att, label='vLLM++', marker="o", markersize=markersize)
 plt.plot(rates, vllm_SLO_att, label='vLLM', marker="o", markersize=markersize)
 plt.plot([rates[0], rates[-1]], [att_target, att_target], '--')
-plt.xticks(rates, rates)
+# plt.xticks(rates, rates)
+plt.xticks([0, 0.2, 0.4, 0.6], [0, 0.2, 0.4, 0.6])
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
 

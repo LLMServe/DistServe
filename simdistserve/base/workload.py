@@ -104,7 +104,7 @@ def sample_requests(dataset_path: PathLike, num_prompts: int) -> 'list[(int, int
     with open(dataset_path, 'rb') as f:
         # {dataset_name:str, data:list[(prompt:str, prompt_len:int, output_len:int)]}
         dataset = marshal.load(f)
-    dataset = dataset['data']
+    dataset = dataset['reqs']
     result = random.sample(dataset, num_prompts)
     result = [(p, d) for (_, p, d) in result]
 

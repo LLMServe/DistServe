@@ -126,6 +126,7 @@ The abalation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` w
 
 ```bash
 micromamba activate distserve
+bash /app/distserve/simdistserve/setup.sh
 bash /app/distserve/simdistserve/benchmarks/figure11-abalation/run_abalation.sh
 ```
 
