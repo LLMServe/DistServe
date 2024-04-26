@@ -71,9 +71,11 @@ On the `C-terminal`, execute
 bash /app/distserve/distserve/evaluation/ae-scripts/kick-the-tires/distllm-client.sh`
 ```
 
-Ideally it should generate a file `/workspace/exp-results/opt-125m-sharegpt/distserve-10-1.exp`.
+Ideally it should generate a file `/workspace/exp-results/opt-125m-sharegpt/distserve-10-1.exp`. The file should contain a JSON object which looks like:
 
-TODO: explain what should these .exp file contains so that the reviewers can confirm everything works fine. @lsy
+```
+[{"prompt_len": 1135, "output_len": 12, "start_time": 200915.496689009, "end_time": 200915.565055445, "token_timestamps": [...]}, ...]
+```
 
 ## Full Evaluation
 
@@ -82,9 +84,7 @@ TODO: explain what should these .exp file contains so that the reviewers can con
 
 The OPT-175B experiment of DistLLM requires four 8xA100-SXM-80GB machines. On common cloud providers like AWS or RunPod, this experiment costs over 2000$ in total for each run. Due to the limited budget, it is too expensive for us to reproduce the OPT-175B experiment (Figure. 8c) so we reuse the data in our paper. But we do provide the scripts for interested ones who have enough resources to produce the results by themselves.
 
-For OPT-13B and OPT-66B End-to-end Experiments, 8 GPUs are required and we provide a script to grab the machine automatically because 8xA100-SXM machine is a ridiculously popular resource on clouds and it usually takes over 1 day to grab the machine.
-
-TODO: how to use the script @lsy
+For OPT-13B and OPT-66B End-to-end Experiments, 8 GPUs are required and we provide a script to grab the machine automatically because 8xA100-SXM machine is a ridiculously popular resource on clouds and it usually takes over 1 day to grab the machine. For instructions on how to use this script, please refer to [this file](grab-machine.md).
 
 For reviewers who do not want to experience this tedious machine-grabbing process, we provide the [screencast](https://drive.google.com/drive/folders/1QCEkpV4Wi2WUutFnDR46NrsSTDXr8lL3?usp=sharing) of producing the results in each figure. 
 
