@@ -12,7 +12,8 @@ max_gpu_per_node = 8
 def parse_args(args_=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", type=str, default='(400, 100)')
-    parser.add_argument("--per_gpu_rate", type=float, default=0.5)
+    parser.add_argument("--per_gpu_rate", type=float, default=0.375)
+    parser.add_argument("--slo", type=str, default='[0.4, 0.6, 0.8, 1.0, 1.2]')
     args = parser.parse_args(args_)
     return args
 
@@ -20,6 +21,7 @@ def parse_args(args_=None):
 args = parse_args()
 chosen_per_gpu_rate = args.per_gpu_rate
 target = eval(args.target)
+slos = eval(args.slo)
 
 Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
@@ -51,7 +53,6 @@ big_df = big_df[big_df['per_gpu_rate'] == chosen_per_gpu_rate]
 
 big_df
 
-slos = [0.4, 0.6, 0.8, 1, 1.2]
 targets = [
     (target[0] * slo, target[1] * slo)
     for slo in slos

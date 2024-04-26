@@ -1,5 +1,6 @@
-import matplotlib.pyplot as plt
 import json
+
+import matplotlib.pyplot as plt
 
 fontsize = 18
 markersize = 8
@@ -40,9 +41,11 @@ plt.plot(rates, vllm_plus_SLO_att, label='vLLM++', marker="o", markersize=marker
 plt.plot(rates, vllm_SLO_att, label='vLLM', marker="o", markersize=markersize)
 plt.plot([rates[0], rates[-1]], [att_target, att_target], '--')
 # plt.xticks(rates, rates)
-plt.xticks([0, 0.2, 0.4, 0.6], [0, 0.2, 0.4, 0.6])
+plt.xticks([0, 0.2, 0.4, 0.6, 0.8], [0, 0.2, 0.4, 0.6, 0.8])
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
+plt.ylim(0, 105)
+plt.yticks([0, 50, 100], [0, 50, 100])
 
 ## SLO Scale
 plt.subplot(1, 2, 2)
@@ -61,6 +64,8 @@ plt.plot(SLO_scales, vllm_SLO_att, label='vLLM', marker="o", markersize=markersi
 plt.plot([SLO_scales[0], SLO_scales[-1]], [att_target, att_target], '--')
 plt.xticks(SLO_scales, reversed([f"{i:.1f}" for i in SLO_scales]))
 plt.xlabel(xlabel)
+plt.ylim(0, 105)
+plt.yticks([0, 50, 100], [0, 50, 100])
 
 # plt.legend(frameon=False, bbox_to_anchor = (0.75, 1.3, 0, 0), ncol=2,
 #            bbox_transform = plt.gcf().transFigure, columnspacing=1)
