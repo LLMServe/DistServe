@@ -90,55 +90,77 @@ For reviewers who do not want to experience this tedious machine-grabbing proces
 
 If you successfully obtain one 8xA100-SXM-80GB machine, please follow the instructions below to reproduce the results in Figure. 8 and Figure. 9.
 
-First let's start with the OPT-13B experiment in Figure. 8:
+Let's start with the OPT-13B experiment in Figure. 8:
 
-- On the `S-terminal`, execute 
+First for vLLM:
+
+On the `S-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-vllm-server.sh
 ```
-- Wait until the server is ready (i.e. `# GPU blocks: XXX, # CPU blocks: XXX` pops up)
-- On the `C-terminal`, execute 
+Wait until the server is ready (i.e. `# GPU blocks: XXX, # CPU blocks: XXX` pops up)
+
+On the `C-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-vllm-client.sh
 ```
-- Wait until the client finishes (i.e. exits without any error)
-- On the `S-terminal`, execute 
+Wait until the client finishes (i.e. exits without any error)
+
+---
+Then for DistLLM:
+
+On the `S-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-distllm-server.sh
 ```
-- Wait until the server is ready (i.e. the engine begins to print its status once per second)
-- On the `C-terminal`, execute 
+Wait until the server is ready (i.e. the engine begins to print its status once per second)
+
+On the `C-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-distllm-client.sh`
 ```
-- Wait until the client finishes (i.e. exits without any error)
+Wait until the client finishes (i.e. exits without any error)
+
+---
 
 And then let's move on to the OPT-66B experiment in Figure. 8:
 
-- On the `S-terminal`, execute 
+First for vLLM:
+
+On the `S-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-66b-vllm-server.sh
 ```
-- Wait until the server is ready (i.e. `# GPU blocks: XXX, # CPU blocks: XXX` pops up)
-- On the `C-terminal`, execute 
+Wait until the server is ready (i.e. `# GPU blocks: XXX, # CPU blocks: XXX` pops up)
+
+On the `C-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-66b-vllm-client.sh
 ```
 This script runs all three datasets (ShareGPT, HumanEval, LongBench) in sequence, which will take a while (~30 minutes).
-- Wait until the client finishes (i.e. exits without any error)
-- On the `S-terminal`, execute 
+
+Wait until the client finishes (i.e. exits without any error)
+
+---
+
+Then for DistLLM:
+
+On the `S-terminal`, execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-66b-distllm-server.sh
 ```
-- Wait until the server is ready (i.e. the engine begins to print its status once per second)
-- On the `C-terminal`, execute
+Wait until the server is ready (i.e. the engine begins to print its status once per second)
+
+On the `C-terminal`, execute
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-66b-distllm-client.sh
 ```
 It will also take a while (~30 minutes).
-- Wait until the client finishes (i.e. exits without any error)
+Wait until the client finishes (i.e. exits without any error)
 
-Finally is the plotting script: execute 
+---
+
+Finally is to run the plotting script: execute 
 ```bash
 bash /app/distserve/distserve/evaluation/ae-scripts/e2e/plot-fig-8-and-9.sh
 ```
