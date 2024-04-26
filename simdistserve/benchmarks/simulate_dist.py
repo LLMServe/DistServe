@@ -312,7 +312,7 @@ def test_opt_13b_grid_search_serial():
         [
             '--arrival', 'poisson',
             '--seed', '0',
-            '--N', '1000',
+            '--N', '100',
             '--prefill-containment', '90',  # P90
             '--prefill-target', '200',  # ms
             '--decode-containment', '90',  # P90
@@ -325,16 +325,17 @@ def test_opt_13b_grid_search_serial():
     config_list = [
         [
             '--rate', f'{rate}',
-            '--output',
-            f'raw_results/request.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
-            '--output-worker',
-            f'raw_results/worker.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
+            # '--output',
+            # f'raw_results/request.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
+            # '--output-worker',
+            # f'raw_results/worker.opt-13b-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}-rate{rate}.csv',
             '--pp-prefill', f'{pp_prefill}',
             '--pp-decode', f'{pp_decode}',
             '--tp-prefill', f'{tp_prefill}',
             '--tp-decode', f'{tp_decode}',
         ]
-        for rate in range(1, 50)
+        # for rate in range(1, 8)
+        for rate in range(1, 9)
         for pp_prefill in [1, 2, 4, 8]
         for pp_decode in [1, 2, 4, 8]
         for tp_prefill in [1, 2, 4, 8]
@@ -356,9 +357,8 @@ def test_opt_13b_grid_search_serial():
                 args.tp_prefill, args.pp_prefill,
                 args.tp_decode, args.pp_decode,
             )
-
-            rate = args.rate
             num_gpu = args.pp_prefill * args.tp_prefill + args.pp_decode * args.tp_decode
+            rate = args.rate * num_gpu
             if num_gpu > 32:
                 continue
             goodput = args.rate / num_gpu
@@ -380,7 +380,9 @@ def test_opt_13b_grid_search_serial():
                     f"{best_config.tp_decode},{best_config.pp_decode},"
                     f"{rate},{best_goodput}")
 
-    print(f"Best Config: {best_config} with goodput {best_goodput}")
+    best_config_str = (f"(Prefill TP = {best_config.tp_prefill}, Prefill PP = {best_config.pp_prefill},"
+                       f" Decode TP = {best_config.tp_decode}, Decode PP = {best_config.pp_decode})")
+    print(f"Best Config: {best_config_str} with goodput {best_goodput}")
 
 
 def test_opt_13b_one_case(
@@ -416,8 +418,8 @@ def test_opt_13b_one_case(
 
 
 if __name__ == '__main__':
-    # args = parse_args()
-    # print(args)
-    # main(args)
-    test_opt_13b_grid_search_serial()
+    args = parse_args()
+    print(args)
+    main(args)
+    # test_opt_13b_grid_search_serial()
     pass
