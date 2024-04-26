@@ -103,7 +103,10 @@ def load_workload(workload, N, rate, cv, seed, process: Literal["fixed", "gamma"
     if workload in ['sharegpt', 'longbench', 'humaneval']:
         dataset_root = os.environ.get('DATASET', '/app/dataset')
         dataset_root = Path(dataset_root)
-        assert dataset_root.exists(), f"Dataset root {dataset_root} does not exist."
+        assert dataset_root.exists(), (
+            f"Dataset root {dataset_root} does not exist. "
+            f"Please set the env var `DATASET` to the correct path."
+        )
         dataset_file = dataset_root / f"{workload}.ds"
         check_dataset_existence(dataset_file)
         requests = sample_requests(dataset_file, N)
@@ -413,7 +416,8 @@ def test_opt_13b_one_case(
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    print(args)
-    main(args)
+    # args = parse_args()
+    # print(args)
+    # main(args)
+    test_opt_13b_grid_search_serial()
     pass

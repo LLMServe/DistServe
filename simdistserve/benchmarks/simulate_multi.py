@@ -115,7 +115,6 @@ if __name__ == "__main__":
                 if ngpu > total_gpus:
                     continue
 
-                # TODO: Employ binary search if necessary
                 for per_gpu_rate in per_gpu_rates:
                     rate = per_gpu_rate * ngpu
                     N = base_N * ngpu

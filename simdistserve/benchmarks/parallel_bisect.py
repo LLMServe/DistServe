@@ -11,10 +11,10 @@ from simdistserve.benchmarks.search_configs import get_distserve_configs
 from simdistserve.constants import ModelTypes
 
 
-# get_distserve_configs(ModelTypes.opt_13b, 4, 8, False)
-# get_vllm_config(ModelTypes.opt_13b, 32)
+def main(num_node, num_gpu_per_node, is_dist_high: bool = True,
+         backend="distserve", attainment=(200, 100, 90, 90),
+         max_per_gpu_rate=5, esp=0.25, N = 1000):
 
-def main(num_node, num_gpu_per_node, is_dist_high: bool = True):
     configs = get_distserve_configs(
         ModelTypes.opt_13b, num_node, num_gpu_per_node, is_dist_high
     )
@@ -29,13 +29,14 @@ def main(num_node, num_gpu_per_node, is_dist_high: bool = True):
             args=(
                 ModelTypes.opt_13b,
                 config,
-                "distserve",
-                (200, 100, 90, 90),
+                backend,
+                attainment,
             ),
             kwargs=dict(
-                max_per_gpu_rate=5,
+                max_per_gpu_rate=max_per_gpu_rate,
                 pid=pid,
-                esp=0.25,
+                esp=esp,
+                N=N,
             )
         )
         if len(processes) >= max_cpu_count:
@@ -54,6 +55,8 @@ def main(num_node, num_gpu_per_node, is_dist_high: bool = True):
         processes.append(proc)
         pass
 
+
+simulate_bisect_search = main
 
 if __name__ == '__main__':
     data = []
