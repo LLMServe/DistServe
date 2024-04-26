@@ -11,6 +11,7 @@ Here is a high level overview of the whole process:
 
 Follow the steps below to create a GPU instance on [RunPod](https://www.runpod.io/) with template `distserve-evaluation`: 
 - Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
+- Switch the account from `osdi24ae` to `Hao Lab@UCSD` using the upper right button.
 - Click `Pods` in the left toolbar.
 - Click `+ Deploy`.
 - Choose `A100 SXM 80GB`.
