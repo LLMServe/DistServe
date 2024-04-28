@@ -183,8 +183,19 @@ to generate Figure. 10. Plots will be saved under `/workspace/plots`.
 
 *Compute Time: 5 min*
 
-The abalation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` where 32 vCPU instance is available.
+The abalation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` where 32 vCPU instance is available. 
 
+Follow the steps below to create a instance with one `RTX3090` GPU instance on [RunPod](https://www.runpod.io/) with template `DistLLM-AE-GPU`: 
+- Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
+- Switch the account from `osdi24ae` to `Hao Lab@UCSD` using the upper right button.
+- Click `Pods` in the left toolbar.
+- Click `+ Deploy`.
+- Choose `RTX 3090`. Note that `vCPU` is 32.
+- Click `Change Template` and choose `DistLLM-AE-GPU`.
+- Choose `GPU Count`: 1 GPUs is sufficient for this experiment. 
+- Click `Deploy On-Demand`: If the button is grey, it means this resource is not currently available.
+
+Once the instance is started, run the following commands to reproduce the results in Figure 11:
 ```bash
 micromamba activate distserve
 bash /app/distserve/simdistserve/setup.sh
