@@ -50,7 +50,7 @@ Wait until the server is ready (i.e. `# GPU blocks: XXX, # CPU blocks: XXX` pops
 
 On the `C-terminal`, execute 
 ```bash
-bash /app/distserve/distserve/evaluation/ae-scripts/kick-the-tires/vllm-client.sh`
+bash /app/distserve/distserve/evaluation/ae-scripts/kick-the-tires/vllm-client.sh
 ```
 
 In the script we add the `--verbose` flag to print out all prompts && responses for a simple correctness check. In the full evaluation section, we will not use this flag.
@@ -68,7 +68,7 @@ Wait until the server is ready (i.e. the engine begins to print its status once 
 
 On the `C-terminal`, execute 
 ```bash
-bash /app/distserve/distserve/evaluation/ae-scripts/kick-the-tires/distllm-client.sh`
+bash /app/distserve/distserve/evaluation/ae-scripts/kick-the-tires/distllm-client.sh
 ```
 
 Ideally it should generate a file `/workspace/exp-results/opt-125m-sharegpt/distserve-10-1.exp`. The file should contain a JSON object which looks like:
@@ -117,7 +117,7 @@ Wait until the server is ready (i.e. the engine begins to print its status once 
 
 On the `C-terminal`, execute 
 ```bash
-bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-distllm-client.sh`
+bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-distllm-client.sh
 ```
 Wait until the client finishes (i.e. exits without any error)
 

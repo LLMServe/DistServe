@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import dataclasses
 from typing import Optional
 
-sys.path.append(os.path.join(os.getcwd(), "..", "..", "2-benchmark-serving"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "2-benchmark-serving"))
 from structs import Dataset, read_request_results, RequestResult
 os.makedirs("/workspace/plots", exist_ok=True)
 
@@ -153,7 +153,7 @@ def plot_fig8_upper():
 
 if plot_id == 8:
     plot_fig8_upper()
-    plt.savefig("/workspace/plots/fig8-upper.pdf")
+    plt.savefig("/workspace/plots/fig8-upper.pdf", bbox_inches="tight")
 
 def draw_slo_scale_plot(
     ax: plt.Axes,
@@ -245,7 +245,7 @@ def plot_fig8_lower():
 
 if plot_id == 8:
     plot_fig8_lower()
-    plt.savefig("/workspace/plots/fig8-lower.pdf")
+    plt.savefig("/workspace/plots/fig8-lower.pdf", bbox_inches="tight")
 
 def plot_fig9():
     plt.rcParams.update({'font.size': 20})
@@ -306,7 +306,7 @@ def plot_fig9():
 
 if plot_id == 9:
     plot_fig9()
-    plt.savefig("/workspace/plots/fig9.pdf")
+    plt.savefig("/workspace/plots/fig9.pdf", bbox_inches="tight")
 
 from distserve.lifetime import LifetimeEvent, LifetimeEventType, json_decode_lifetime_events
 import numpy as np
@@ -436,5 +436,5 @@ def plot_fig10():
 
 if plot_id == 10:
     plot_fig10()
-    plt.savefig("/workspace/plots/fig10.pdf")
+    plt.savefig("/workspace/plots/fig10.pdf", bbox_inches="tight")
 
