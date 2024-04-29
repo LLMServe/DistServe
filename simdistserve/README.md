@@ -58,3 +58,4 @@ In the high level, our simulator is composed of the following core components (u
 - `Scheduler`. The scheduler forwards the requests to the workers, with specified arrival rate and process (e.g. Poisson, Gamma, fixed rate).
 - `Cluster`: The cluster is just a wrapper around the workers and scheduler. `DisaggCluster` and `VLLMCluster` are the available options to choose from.
 
+On top of the core components, we implement the embarrassingly parallel search of the optimal parallelism configuration. The search is done by a binary search algorithm that tries to find the optimal per GPU rate that maximizes the goodput of the workload. The algorithm is currently under `benchmarks` module.
