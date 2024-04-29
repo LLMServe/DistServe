@@ -89,13 +89,16 @@ async def send_request(
         request_start_time = time.perf_counter()
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=3*3600)) as session:
             token_timestamps = []
-            last_data = b""
+            generated_text = ""
             try:
                 async with session.post(url=api_url, json=payload) as response:
                     if response.status == 200:
                         async for data in response.content.iter_any():
                             token_timestamps.append(time.perf_counter())
-                            last_data = data
+                            try:
+                                generated_text += json.loads(data.decode("utf-8")[6:])["text"][0]
+                            except:
+                                generated_text += data.decode("utf-8")
                         complete_time = time.perf_counter()
                     else:
                         print(response)
@@ -108,8 +111,7 @@ async def send_request(
         request_end_time = time.perf_counter()
         
         if verbose:
-            last_data = last_data.decode("utf-8")
-            print(f"Prompt: {prompt}, Output: {last_data}")
+            print(f"Prompt: {prompt}, Output: {generated_text}")
         
         pbar.update(1)
         return RequestResult(
