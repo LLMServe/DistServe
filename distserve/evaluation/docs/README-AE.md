@@ -195,7 +195,7 @@ Follow the steps below to create a instance with one `RTX3090` GPU instance on [
 - Choose `GPU Count`: 1 GPUs is sufficient for this experiment. 
 - Click `Deploy On-Demand`: If the button is grey, it means this resource is not currently available.
 
-Once the instance is started, run the following commands to reproduce the results in Figure 11:
+When you successfully log into the machine, execute the following commands to reproduce the results in Figure 11:
 ```bash
 micromamba activate distserve
 bash /app/distserve/simdistserve/setup.sh
