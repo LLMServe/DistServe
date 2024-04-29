@@ -17,6 +17,7 @@ def run_binary_search(
     esp=0.5,
     N=1000,
     debug=False,
+    result=None,
 ):
     N = str(N)
 
@@ -67,6 +68,7 @@ def run_binary_search(
 
     time_durations = []
     while (high - low) > esp:
+        # print(f"pid={pid}, config={config}, low={low}, high={high}")
         # Run simulation
         this_rate = (low + high) / 2
         rate = this_rate * num_gpu
@@ -79,9 +81,11 @@ def run_binary_search(
             end_time = time.time()
             time_durations.append((config, this_rate, end_time - start_time))
         except Exception as e:
-            if debug:
-                import traceback
-                traceback.print_exc()
+            import traceback
+            print(
+                f"({pid=}) Error when computing {config=}. This may not be a real error "
+                f"(e.g. bad parallelism strategy). Exception detail: {traceback.format_exc()}."
+            )
             return None
 
         # Update the range
@@ -95,6 +99,9 @@ def run_binary_search(
         low = this_rate
         best_per_gpu_rate = this_rate
         pass
+    # print(best_per_gpu_rate)
+    if result is not None:
+        result[config] = best_per_gpu_rate
     return best_per_gpu_rate
 
 

@@ -1,6 +1,6 @@
 import os
 import time
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 from time import sleep
 
 import pandas as pd
@@ -10,50 +10,66 @@ from simdistserve.benchmarks.search_binary import run_binary_search
 from simdistserve.benchmarks.search_configs import get_distserve_configs
 from simdistserve.constants import ModelTypes
 
+# Restrict runtime to <= 32 CPU core.
+# RunPod encounters problem when using `os.cpu_count()`
+# to query the number of CPUs
+MAX_CPU_COUNT = min(os.cpu_count() - 2, 32)
 
-def main(num_node, num_gpu_per_node, is_dist_high: bool = True,
-         backend="distserve", attainment=(200, 100, 90, 90),
-         max_per_gpu_rate=5, esp=0.25, N = 1000):
 
+def main(
+    num_node: int, num_gpu_per_node: int, model_type=ModelTypes.opt_13b,
+    is_dist_high: bool = True,
+    backend: str = "distserve", attainment=(200, 100, 90, 90),
+    max_per_gpu_rate=5, esp=0.25, N=1000,
+    max_cpu_count=MAX_CPU_COUNT,
+):
+    """
+    :return result: dict that maps config to the best_per_gpu_rate (int)
+    """
     configs = get_distserve_configs(
-        ModelTypes.opt_13b, num_node, num_gpu_per_node, is_dist_high
+        model_type, num_node, num_gpu_per_node, is_dist_high
     )
 
-    max_cpu_count = os.cpu_count() - 2
-
     processes = []
-    for pid, config in tqdm(enumerate(configs), total=len(configs)):
-
-        proc = Process(
-            target=run_binary_search,
-            args=(
-                ModelTypes.opt_13b,
-                config,
-                backend,
-                attainment,
-            ),
-            kwargs=dict(
-                max_per_gpu_rate=max_per_gpu_rate,
-                pid=pid,
-                esp=esp,
-                N=N,
+    # Add a multiproc shared dict
+    with Manager() as manager:
+        result = manager.dict()
+        pbar = tqdm(enumerate(configs), total=len(configs))
+        for pid, config in pbar:
+            proc = Process(
+                target=run_binary_search,
+                args=(
+                    ModelTypes.opt_13b, config,
+                    backend, attainment,
+                ),
+                kwargs=dict(
+                    max_per_gpu_rate=max_per_gpu_rate,
+                    pid=pid, esp=esp,
+                    N=N, result=result,
+                    debug=True,
+                )
             )
-        )
-        if len(processes) >= max_cpu_count:
-            # Find one process that has ended
-            found = False
-            while not found:
-                for i in range(len(processes)):
-                    if not processes[i].is_alive():
-                        processes[i].join()
-                        processes.pop(i)
-                        found = True
-                        break
-                sleep(0.2)
+            if len(processes) >= max_cpu_count:
+                # Pop a process that has finished running
+                found = False
+                while not found:
+                    for i in range(len(processes)):
+                        if not processes[i].is_alive():
+                            processes[i].join()
+                            processes.pop(i)
+                            found = True
+                            pbar.update(1)
+                            break
+                    sleep(0.2)
 
-        proc.start()
-        processes.append(proc)
-        pass
+            proc.start()
+            processes.append(proc)
+            pass
+        for proc in processes:
+            pbar.update(1)
+            proc.join()
+        result = dict(result)
+        return result
 
 
 simulate_bisect_search = main
