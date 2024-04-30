@@ -124,6 +124,9 @@ set -e
 echo "Running the startup script..."
 echo "Setting up SSH..."
 mkdir -p ~/.ssh
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFoz16d3eU3q48NWvR2JXGcaMmuHOHsE/g8gVSzsJixh intlsy@i" >> ~/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBDEH1+00FfY6d8ZmFIEqTw9ExbvnOpzuGmAAG1H4h6r juc049@ucsd.edu" >> ~/.ssh/authorized_keys
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDCbrspc7ZZFq6K+oLcbAWz3riDhtyWVcYuP1LasfVTN57UhcRSkjUzyc5KNS+VEtvB02eGnDzZUWhJKb54dE0xAnhK0k4w5jvZCtdKV6l6l1Hoq5yRQc56mlWq4LF5l2aqSM3XvJ5mWhcZCceCFA2iOxYH9lQ9loFrwLpaM1s348kLZKT4sIc7MN+x0j1RExwNGU0P6S7OqFofL8py2BCoNElfXUQXrLE6J2TBqYjxnR5oaI2AE3qZ1FLvl3sVwRms+wLNplWVajnVZplvTIXj7dR6LBN6PtYjMYTGfBUuxamdbOnJaq97SOnKx5lq/a/0LB5eUYKw4nQzZNGTDrpw5qMoawgJ4dtMdaUep1zRp5aVlmpgxJoX+3zQvZnJA1MNaTlOMIKo+TUnD9ZOUImOQomI+M6KGF1oEl4PO3p9sZUC5f5Y8jhMiA6xJP2OsQ71xRAfiUeTGfkMkHET0v9JCcFzh7pjKiRwKEWfNa4KTQzmwuJ9huXoyggIURib270= zhongyinmin@zhongyinmindeMacBook-Pro.local" >> ~/.ssh/authorized_keys
 if [[ ! -z \$PUBLIC_KEY ]]; then
     echo "Adding public key" \$PUBLIC_KEY "to authorized_keys..."
     echo "\$PUBLIC_KEY" >> ~/.ssh/authorized_keys
