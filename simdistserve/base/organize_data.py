@@ -115,8 +115,6 @@ def calculate_per_request_latency(
 
     # Then, calculate the first token latency and decoding latency for each req_id
     first_token_latency = first_wait_decode - first_event
-    # TODO: (Hack)!!!
-    # decoding_latency = last_event - first_event
     decoding_latency = last_event - first_wait_decode
     total_latency = last_event - first_event
 

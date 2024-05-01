@@ -125,13 +125,7 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
         (df['tp_prefill'] == tp_prefill) & (df['pp_prefill'] == pp_prefill) &
         (df['tp_decode'] == tp_decode) & (df['pp_decode'] == pp_decode)
         ]
-    if 'vllm' in trace:
-        name = f"{trace}-p{tp_prefill}{pp_prefill}"
-        pass
-    else:
-        name = f"{trace}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}"
-        pass
-
+    name = trace
     fig.plot(
         config_df['per_gpu_rate'], config_df['attainment'],
         label=name,

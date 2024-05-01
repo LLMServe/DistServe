@@ -149,13 +149,7 @@ def add_matplotlib_trace(fig, df: 'DataFrame', trace: str):
         (df['tp_decode'] == tp_decode) & (df['pp_decode'] == pp_decode)
         ]
     config_df = config_df.sort_values(by=['slo'], ascending=False)
-    if 'vllm' in trace:
-        name = f"{trace}-p{tp_prefill}{pp_prefill}"
-        pass
-    else:
-        name = f"{trace}-p{tp_prefill}{pp_prefill}{tp_decode}{pp_decode}"
-        pass
-
+    name = trace
     fig.plot(
         config_df['slo'],
         config_df['attainment'],
