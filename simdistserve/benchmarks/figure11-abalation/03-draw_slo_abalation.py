@@ -5,15 +5,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-max_machine = 4
-max_gpu_per_node = 8
-
 
 def parse_args(args_=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", type=str, default='(400, 100)')
     parser.add_argument("--per_gpu_rate", type=float, default=0.375)
     parser.add_argument("--slo", type=str, default='[0.4, 0.6, 0.8, 1.0, 1.2]')
+    parser.add_argument("--max-machine", type=int, default=4)
+    parser.add_argument("--max-gpu-per-node", type=int, default=8)
+
     args = parser.parse_args(args_)
     return args
 
@@ -22,6 +22,8 @@ args = parse_args()
 chosen_per_gpu_rate = args.per_gpu_rate
 target = eval(args.target)
 slos = eval(args.slo)
+max_machine = args.max_machine
+max_gpu_per_node = args.max_gpu_per_node
 
 Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
@@ -168,15 +170,6 @@ a = add_matplotlib_trace(ax, figure_11_distserve_high, "disthigh")
 b = add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
 c = add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
 d = add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
-plt.title("Figure 11: Abalation Study (DistServe and vLLM)")
-plt.xlabel("SLO Scale")
-plt.ylabel("SLO Attainment (%)")
-plt.xticks(slos)
-plt.gca().invert_xaxis()
-plt.legend()
-
-# save the plot 
-fig.savefig("figure/figure_11b.png")
 
 data_points = {
     "dist++": a,
