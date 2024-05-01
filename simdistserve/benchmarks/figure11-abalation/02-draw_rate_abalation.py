@@ -6,19 +6,20 @@ import pandas as pd
 
 target = '(400.0, 100.0)'
 
-max_machine = 4
-max_gpu_per_node = 8
-
 
 def parse_args(args_=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", type=str, default=target)
+    parser.add_argument("--max-machine", type=int, default=4)
+    parser.add_argument("--max-gpu-per-node", type=int, default=8)
     args = parser.parse_args(args_)
     return args
 
 
 args = parse_args()
 target = eval(args.target)
+max_machine = args.max_machine
+max_gpu_per_node = args.max_gpu_per_node
 
 Path("figure").mkdir(exist_ok=True)
 Path("visual").mkdir(exist_ok=True)
@@ -143,12 +144,6 @@ a = add_matplotlib_trace(ax, figure_11_distserve_high, "disthigh")
 b = add_matplotlib_trace(ax, figure_11_distserve_low, "distlow")
 c = add_matplotlib_trace(ax, figure_11_vllm_high, "vllm++")
 d = add_matplotlib_trace(ax, figure_11_vllm_low, "vllm")
-
-plt.title("Figure 11: Abalation Study (DistServe and vLLM)")
-plt.xlabel("Per-GPU Rate (req/s)")
-plt.ylabel("SLO Attainment (%)")
-plt.legend()
-fig.savefig("figure/figure_11a.png")
 
 data_points = {
     "dist++": a,
