@@ -7,11 +7,9 @@ First, copy-paste [this script](https://github.com/LLMServe/DistServe/blob/camer
 Then, execute the following command:
 
 ```bash
-python3 grab-pod.py --api-key "API_KEY" --public-key "SSH_PUBKEY" --num-gpus 8
+python3 grab-pod.py --api-key "API_KEY" --num-gpus 8
 ```
 The `API_KEY` is provided via HotCRP.
-
-The `SSH_PUBKEY` is the SSH public key you provide to us.
 
 When you successfully grab a machine, you will see the following message:
 
