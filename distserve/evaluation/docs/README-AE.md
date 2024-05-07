@@ -28,6 +28,7 @@ Follow the steps below to create a instance with two `A100 SXM 80GB` GPUs on [Ru
 - Click `Change Template` and choose `DistLLM-AE-GPU`.
 - Choose `GPU Count`: For Kick-the-tires, 2 GPUs are sufficient, which is usually always available on RunPod. 
 - Click `Deploy On-Demand`: If the button is grey, it means this resource is not currently available.
+- We suggest you to change the instance name to `DistLLM-AE-GPU-<your_reviewer_id>`, to distinguish it from other reviewers' instances and avoid conflicts with other reviewers: To achieve this, please navigate to the `Pods` page, click the down arrow on the right side of the instance name, click on the pencil icon next to the instance name, and change the name to `DistLLM-AE-GPU-<your_reviewer_id>`.
 
 
 When the instance is started, you can ssh into the instance  in your terminal. Remember to provide your public key on the hotcrp so that we can give you the access to the instance you create. Here are some high-level overviews and notes:
