@@ -38,7 +38,7 @@ with open("figure/figure_11a.json") as f:
 plt.plot(rates, distllm_optimal_SLO_att, label='DistLLM-High', marker="o", markersize=markersize)
 plt.plot(rates, distllm_real_SLO_att, label='DistLLM-Low', marker="o", markersize=markersize)
 plt.plot(rates, vllm_plus_SLO_att, label='vLLM++', marker="o", markersize=markersize)
-plt.plot(rates, vllm_SLO_att, label='vLLM', marker="o", markersize=markersize)
+plt.plot(rates, vllm_SLO_att, label='vLLM', marker="^", markersize=markersize)
 plt.plot([rates[0], rates[-1]], [att_target, att_target], '--')
 # plt.xticks(rates, rates)
 plt.xticks([0, 0.2, 0.4, 0.6, 0.8], [0, 0.2, 0.4, 0.6, 0.8])
