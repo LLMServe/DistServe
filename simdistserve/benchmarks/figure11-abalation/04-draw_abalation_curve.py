@@ -38,7 +38,7 @@ with open("figure/figure_11a.json") as f:
 plt.plot(rates, distllm_optimal_SLO_att, label='DistLLM-High', marker="o", markersize=markersize)
 plt.plot(rates, distllm_real_SLO_att, label='DistLLM-Low', marker="o", markersize=markersize)
 plt.plot(rates, vllm_plus_SLO_att, label='vLLM++', marker="o", markersize=markersize)
-plt.plot(rates, vllm_SLO_att, label='vLLM', marker="^", markersize=markersize)
+plt.plot(rates, vllm_SLO_att, label='vLLM', marker="^", markersize=markersize, linestyle='--', linewidth=1)
 plt.plot([rates[0], rates[-1]], [att_target, att_target], '--')
 # plt.xticks(rates, rates)
 plt.xticks([0, 0.2, 0.4, 0.6, 0.8], [0, 0.2, 0.4, 0.6, 0.8])
@@ -60,7 +60,8 @@ with open("figure/figure_11b.json") as f:
 plt.plot(SLO_scales, distllm_optimal_SLO_att, label='DistLLM-High', marker="o", markersize=markersize)
 plt.plot(SLO_scales, distllm_real_SLO_att, label='DistLLM-Low', marker="o", markersize=markersize)
 plt.plot(SLO_scales, vllm_plus_SLO_att, label='vLLM++', marker="o", markersize=markersize)
-plt.plot(SLO_scales, vllm_SLO_att, label='vLLM', marker="o", markersize=markersize)
+# make the line smaller
+plt.plot(SLO_scales, vllm_SLO_att, label='vLLM', marker="^", markersize=markersize, linestyle='--', linewidth=1)
 plt.plot([SLO_scales[0], SLO_scales[-1]], [att_target, att_target], '--')
 plt.xticks(SLO_scales, reversed([f"{i:.1f}" for i in SLO_scales]))
 plt.xlabel(xlabel)
