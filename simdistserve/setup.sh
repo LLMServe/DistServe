@@ -1,2 +1,2 @@
 mkdir -p /workspace
-pip install simpy matplotlib tqmd
+pip install simpy matplotlib tqdm

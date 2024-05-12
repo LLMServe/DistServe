@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Abalation study with DistServe and vLLM with OPT-66B ShareGPT
+# Ablation study with DistServe and vLLM with OPT-66B ShareGPT
 
 total_gpu=32
 per_gpu_rate='[0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75]'
@@ -14,7 +14,7 @@ decode_target=100
 rm -rf result || true
 mkdir -p result
 
-# Production code for abalation study
+# Production code for ablation study
 config_tpl="--model ${model} --prefill-target ${prefill_target} --decode-target ${decode_target} --tp-prefill {tp_prefill} --pp-prefill {pp_prefill} --tp-decode {tp_decode} --pp-decode {pp_decode}"
 output_tpl="--output {file_prefix}.latency.csv"
 exec_path=$(realpath ../simulate_dist.py)

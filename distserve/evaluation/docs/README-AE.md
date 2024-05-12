@@ -184,7 +184,7 @@ to generate Figure. 10. Plots will be saved under `/workspace/plots`.
 
 *Compute Time: 5 min*
 
-The abalation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` where 32 vCPU instance is available. 
+The ablation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` where 32 vCPU instance is available. 
 
 Follow the steps below to create a instance with one `RTX3090` GPU instance on [RunPod](https://www.runpod.io/) with template `DistLLM-AE-GPU`: 
 - Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
@@ -200,8 +200,8 @@ When you successfully log into the machine, execute the following commands to re
 ```bash
 micromamba activate distserve
 bash /app/distserve/simdistserve/setup.sh
-bash /app/distserve/simdistserve/benchmarks/figure11-abalation/run_abalation.sh
+bash /app/distserve/simdistserve/benchmarks/figure11-ablation/run_ablation.sh
 ```
 
-Plots will be saved under `/workspace/abalation.pdf`
+Plots will be saved under `/workspace/ablation.pdf`
 
