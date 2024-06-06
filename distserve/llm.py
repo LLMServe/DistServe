@@ -3,6 +3,7 @@ from typing import List, Union, Optional, AsyncGenerator
 
 import asyncio
 from tqdm import tqdm
+import argparse
 
 from distserve.config import (
     ModelConfig,
@@ -16,6 +17,7 @@ from distserve.single_stage_engine import StepOutput
 from distserve.engine import LLMEngine
 from distserve.logger import init_logger
 from distserve.request import Request, SamplingParams
+from distserve.simulator.config import SimulatorConfig
 
 
 logger = init_logger(__name__)
@@ -105,17 +107,70 @@ class AsyncLLM:
         disagg_parallel_config: DisaggParallelConfig,
         cache_config: CacheConfig,
         context_sched_config: ContextStageSchedConfig,
-        decoding_sched_config: DecodingStageSchedConfig
+        decoding_sched_config: DecodingStageSchedConfig,
+        simulator_config: Optional[SimulatorConfig]
     ):
         self.engine = LLMEngine(
             model_config,
             disagg_parallel_config,
             cache_config,
             context_sched_config,
-            decoding_sched_config
+            decoding_sched_config,
+            simulator_config
         )
         
         asyncio.run(self.engine.initialize())
+    
+    def from_engine_args(
+        args: argparse.Namespace
+    ):
+        return AsyncLLM(
+            model_config=ModelConfig(
+                model=args.model,
+                tokenizer=args.tokenizer,
+                trust_remote_code=args.trust_remote_code,
+                seed=args.seed,
+                use_dummy_weights=args.use_dummy_weights
+            ),
+            disagg_parallel_config=DisaggParallelConfig(
+                context=ParallelConfig(
+                    tensor_parallel_size=args.context_tensor_parallel_size,
+                    pipeline_parallel_size=args.context_pipeline_parallel_size
+                ),
+                decoding=ParallelConfig(
+                    tensor_parallel_size=args.decoding_tensor_parallel_size,
+                    pipeline_parallel_size=args.decoding_pipeline_parallel_size
+                )
+            ),
+            cache_config=CacheConfig(
+                block_size=args.block_size,
+                max_num_blocks_per_req=args.max_num_blocks_per_req,
+                gpu_memory_utilization=args.gpu_memory_utilization,
+                cpu_swap_space=args.swap_space
+            ),
+            context_sched_config=ContextStageSchedConfig(
+                policy=args.context_sched_policy,
+                max_batch_size=args.context_max_batch_size,
+                max_tokens_per_batch=args.context_max_tokens_per_batch
+            ),
+            decoding_sched_config=DecodingStageSchedConfig(
+                policy=args.decoding_sched_policy,
+                max_batch_size=args.decoding_max_batch_size,
+                max_tokens_per_batch=args.decoding_max_tokens_per_batch,
+                profiling_file=args.decoding_profiling_file,
+                model_name=args.model,
+                proactive_offloading=args.decoding_proactive_offloading,
+                num_min_free_blocks_threshold=args.decoding_num_min_free_blocks_threshold,
+                num_queues_for_prediction=args.decoding_num_queues_for_prediction,
+                use_skip_join=args.decoding_use_skip_join,
+                waiting_block_prop_threshold=0.05
+            ),
+            simulator_config=SimulatorConfig(
+                is_simulator_mode=args.simulator_mode,
+                profiler_data_path=args.profiler_data_path,
+                gpu_mem_size_gb=args.gpu_mem_size_gb
+            )
+        )
 
     async def start_event_loop(self):
         """Start the underlying LLMEngine's event loop

@@ -1,0 +1,152 @@
+# syntax=docker/dockerfile:1.7-labs
+FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
+
+SHELL ["/bin/bash", "-c"]
+WORKDIR /app
+
+# Install dependencies
+RUN --mount=type=cache,target=/var/cache/apt \
+    --mount=type=cache,target=/var/lib/apt/lists \
+    sed -ri.bak -e 's/\/\/.*?(archive.ubuntu.com|mirrors.*?)\/ubuntu/\/\/mirrors.pku.edu.cn\/ubuntu/g' -e '/security.ubuntu.com\/ubuntu/d' /etc/apt/sources.list && \
+    apt update && \
+    apt install -y --no-install-recommends git cmake build-essential openmpi-bin openmpi-common libopenmpi-dev libaio-dev curl
+
+# Install micromamba
+RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    mv bin/micromamba /usr/local/bin/micromamba && \
+    rm -rf bin && \
+    micromamba shell init --shell bash --root-prefix=/root/micromamba && \
+    micromamba shell init --shell fish --root-prefix=/root/micromamba
+
+# Set conda mirror to TUNA mirror
+COPY <<EOF /root/.condarc
+channels:
+    - defaults
+show_channel_urls: true
+default_channels:
+    - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+    - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+    - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+custom_channels:
+    conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    msys2: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    bioconda: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    menpo: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    pytorch-lts: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    simpleitk: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+    deepmodeling: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/
+EOF
+
+# Set up env for vLLM
+# Some explanations:
+#   `--mount=XXXX` mounts a cache to the container, which is used to cache the downloaded packages.
+#   `eval "$(micromamba shell hook --shell bash)"` is responsible for setting up the conda environment under non-interactive shell.
+COPY distserve/evaluation/vllm/requirements.txt /app/vllm-requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/micromamba/pkgs \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -n vllm python=3.10 -c conda-forge && \
+    micromamba activate vllm && \
+    pip config --user set global.index-url https://mirrors.pku.edu.cn/pypi/web/simple && \
+    pip install -r /app/vllm-requirements.txt && \
+    rm -rf /app/vllm-requirements.txt
+
+# Install vLLM
+# Assume that its source code locates at distserve/evaluation/vllm
+# Make sure it is on the correct branch (distserve-baseline-vllm)
+COPY --exclude=distserve/evaluation/vllm/build distserve/evaluation/vllm /app/vllm
+RUN --mount=type=cache,target=/app/vllm/build \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba activate vllm && \
+    cd /app/vllm && \
+    export MAX_JOBS=8 && \
+    pip install -e . -v
+
+# Set up env for DeepSpeed-MII
+COPY distserve/evaluation/DeepSpeed-MII/requirements/requirements.txt /app/deepspeed-mii-requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/micromamba/pkgs \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -n deepspeed-mii python=3.10 -c conda-forge && \
+    micromamba activate deepspeed-mii && \
+    pip install -r /app/deepspeed-mii-requirements.txt && \
+    rm -rf /app/deepspeed-mii-requirements.txt
+
+# Install DeepSpeed-MII
+# Assume that its source code locates at distserve/evaluation/DeepSpeed-MII
+COPY distserve/evaluation/DeepSpeed-MII /app/DeepSpeed-MII
+RUN --mount=type=cache,target=/app/DeepSpeed-MII/build \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba activate deepspeed-mii && \
+    cd /app/DeepSpeed-MII && \
+    pip install -e . -v
+
+# Set up env for distserve
+COPY environment.yml /app/environment.yml
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/micromamba/pkgs \
+    micromamba create -n distserve -f /app/environment.yml
+
+# Set up SwiftTransformer
+# Assume that `SwiftTransformer` is cloned at the same level as the root build dir, and
+# `git submodule update --init --recursive` has been run inside `SwiftTransformer`
+COPY --exclude=SwiftTransformer/build SwiftTransformer /app/SwiftTransformer
+RUN --mount=type=cache,target=/app/SwiftTransformer/build \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba activate distserve && \
+    cd /app/SwiftTransformer && \
+    cmake -DTORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0" -DCMAKE_CUDA_ARCHITECTURES="80;86;89;90" -B build && \
+    cmake --build build -j $(nproc) && \
+    cp build/lib/libst_pybinding.so .
+
+# Install development software & set up development environment
+# Here we need openssh-server to enable SSH service for runpod
+RUN --mount=type=cache,target=/var/cache/apt \
+    --mount=type=cache,target=/var/lib/apt/lists \
+    --mount=type=cache,target=/root/.cache/pip \
+    apt update && \
+    apt install -y --no-install-recommends nano vim sudo wget fish openssh-server lsof zip unzip btop tree psmisc && \
+    echo "alias conda=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
+    echo "alias mamba=micromamba" | tee -a /root/.bashrc | tee -a /root/.config/fish/config.fish && \
+    echo 'export SWIFT_TRANSFORMER_LIB_PATH="/app/SwiftTransformer/libst_pybinding.so"' >> /app/envvars && \
+    echo 'export EXP_RESULT_ROOT="/workspace/exp-results"' >> /app/envvars && \
+    echo 'export RAY_DEDUP_LOGS=0' >> /app/envvars && \
+    echo '. /app/envvars' >> /root/.bashrc && \
+    echo '. /app/envvars' >> /root/.config/fish/config.fish && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba activate distserve && \
+    pip install nvitop matplotlib ipykernel
+
+COPY <<EOF /app/startup.sh
+#!/bin/bash
+set -e
+echo "Running the startup script..."
+echo "Setting up SSH..."
+mkdir -p ~/.ssh
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFoz16d3eU3q48NWvR2JXGcaMmuHOHsE/g8gVSzsJixh intlsy@i" >> ~/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBDEH1+00FfY6d8ZmFIEqTw9ExbvnOpzuGmAAG1H4h6r juc049@ucsd.edu" >> ~/.ssh/authorized_keys
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDCbrspc7ZZFq6K+oLcbAWz3riDhtyWVcYuP1LasfVTN57UhcRSkjUzyc5KNS+VEtvB02eGnDzZUWhJKb54dE0xAnhK0k4w5jvZCtdKV6l6l1Hoq5yRQc56mlWq4LF5l2aqSM3XvJ5mWhcZCceCFA2iOxYH9lQ9loFrwLpaM1s348kLZKT4sIc7MN+x0j1RExwNGU0P6S7OqFofL8py2BCoNElfXUQXrLE6J2TBqYjxnR5oaI2AE3qZ1FLvl3sVwRms+wLNplWVajnVZplvTIXj7dR6LBN6PtYjMYTGfBUuxamdbOnJaq97SOnKx5lq/a/0LB5eUYKw4nQzZNGTDrpw5qMoawgJ4dtMdaUep1zRp5aVlmpgxJoX+3zQvZnJA1MNaTlOMIKo+TUnD9ZOUImOQomI+M6KGF1oEl4PO3p9sZUC5f5Y8jhMiA6xJP2OsQ71xRAfiUeTGfkMkHET0v9JCcFzh7pjKiRwKEWfNa4KTQzmwuJ9huXoyggIURib270= zhongyinmin@zhongyinmindeMacBook-Pro.local" >> ~/.ssh/authorized_keys
+if [[ ! -z \$PUBLIC_KEY ]]; then
+    echo "Adding public key" \$PUBLIC_KEY "to authorized_keys..."
+    echo "\$PUBLIC_KEY" >> ~/.ssh/authorized_keys
+    chmod 700 -R ~/.ssh
+else
+    echo "No public key provided, skipping..."
+fi
+service ssh start
+echo "Start script finished, pod is ready to use."
+sleep infinity
+EOF
+
+# Copy dataset
+COPY --exclude=distserve/evaluation/dataset/raw distserve/evaluation/dataset /app/dataset
+
+# Install distserve
+COPY --exclude=distserve/evaluation/vllm --exclude=distserve/evaluation/DeepSpeed-MII --exclude=SwiftTransformer . /app/distserve
+RUN eval "$(micromamba shell hook --shell bash)" && \
+    micromamba activate distserve && \
+    cd /app/distserve && \
+    pip install -e .
+
+CMD ["bash", "/app/startup.sh"]

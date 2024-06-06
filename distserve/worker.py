@@ -39,8 +39,8 @@ class ParaWorker:
         model_config: ModelConfig,
         cache_config: CacheConfig,
         parallel_config: ParallelConfig = ParallelConfig(),
-        tensor_parallel_id: List[int] = None,
-        pipeline_parallel_id: List[int] = None,
+        tensor_parallel_id: List[int] = None,   # Although the type is list[int], it is actually a NCCL unique ID
+        pipeline_parallel_id: List[int] = None, # Same as above
     ) -> None:
         self.worker_id = worker_id
         self.stage = stage
@@ -197,7 +197,7 @@ class ParaWorker:
         input_tokens_batched,
         first_token_indexes,
         block_table,
-    ) -> Tuple[Optional[List[int]], int]:
+    ) -> List[int]:
         """Run one step of inference on the batch of requests."""
 
         start = time.time()

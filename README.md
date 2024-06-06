@@ -8,7 +8,7 @@ only leads to strong prefill-decoding interferences but also
 couples the resource allocation and parallelism plans for both
 phases. In DistServe, you can simply set the parallelism configs and scheduling strategies for the two phases and it will work just like a single instance which handles the KV-Cache communication and memory management automatically. 
 
-It utilizes a high-performance C++ Transformer inference library SwiftTransformer as the execution backend, which supports many features like model/pipeline parallelism, FlashAttention, Continuous Batching, and PagedAttention.
+It utilizes a high-performance C++ Transformer inference library [SwiftTransformer](https://github.com/LLMServe/SwiftTransformer) as the execution backend, which supports many features like model/pipeline parallelism, FlashAttention, Continuous Batching, and PagedAttention.
 
 It supports:
 - GPT-2 (gpt2, gpt2-xl, ...)
@@ -34,15 +34,19 @@ pip install -e .
 
 ### Launch Ray Cluster
 
-DistServe relies on [ray](https://ray.io) to implement workers. If you do not launch a ray cluster in advance, it will automatically initiate a cluster consisting of all the gpus on the current node. You may need to start the ray cluster manually in advance if you want to use multiple nodes for inference.
+DistServe relies on [Ray](https://ray.io) to implement distributed workers. If you do not launch a Ray runtime in advance, it will automatically initiate a cluster consisting of all the gpus on the current node. You may need to start the Ray runtime manually in advance if you want to use multiple nodes for inference.
 
-### Run offline Example
+### Run offline example
 
-We provide an offline examples to play with, you may try `distserve/exmples/offline.py`.
+DistServe requires at least two GPUs to play with. We provide an offline inference example in `distserve/exmples/offline.py`.
 
-### Launch the API Server
+### Run online example
 
-To launch the online server API server, try out `distserve/api_server/distserve_api_server.py`
+To run online inference, you need to launch the DistServe API server, see the comments in `distserve/api_server/distserve_api_server.py`.
+
+### Evaluation
+
+To reproduce all the experiments in our paper, please follow the the [guidance](./evaluation/README.md).
 
 ## Citation
 If you use DistServe for your research, please cite our [paper](https://arxiv.org/abs/2401.09670):
