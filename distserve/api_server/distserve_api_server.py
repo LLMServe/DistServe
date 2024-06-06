@@ -1,3 +1,31 @@
+"""
+Usage example:
+
+python -m distserve.api_server.distserve_api_server \\
+    --host 0.0.0.0 \\
+    --port {port} \\
+    --model {args.model} \\
+    --tokenizer {args.model} \\
+    \\
+    --context-tensor-parallel-size {context_tp} \\
+    --context-pipeline-parallel-size {context_pp} \\
+    --decoding-tensor-parallel-size {decoding_tp} \\
+    --decoding-pipeline-parallel-size {decoding_pp} \\
+    \\
+    --block-size 16 \\
+    --max-num-blocks-per-req 128 \\
+    --gpu-memory-utilization 0.95 \\
+    --swap-space 16 \\
+    \\
+    --context-sched-policy fcfs \\
+    --context-max-batch-size 128 \\
+    --context-max-tokens-per-batch 8192 \\
+    \\
+    --decoding-sched-policy fcfs \\
+    --decoding-max-batch-size 1024 \\
+    --decoding-max-tokens-per-batch 65536
+"""
+
 import argparse
 import json
 from typing import AsyncGenerator, List, Tuple
