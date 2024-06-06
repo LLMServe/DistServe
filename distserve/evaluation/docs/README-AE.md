@@ -1,10 +1,10 @@
-# DistLLM Artifact Evaluation Guide
+# DistServe Artifact Evaluation Guide
 
-This is the artifact of the paper "DistLLM: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving". We are going to guide you through the process of reproducing the main results in the paper.
+This is the artifact of the paper "DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving". We are going to guide you through the process of reproducing the main results in the paper.
 
 Here is a high level overview of the whole process:
 1. Environment Setup: Create a GPU instance on [RunPod](https://www.runpod.io/) from our provided template with all the environment already setup.
-2. Kick-the-tires: Run some toy examples to verify DistLLM and vLLM are working.
+2. Kick-the-tires: Run some toy examples to verify DistServe and vLLM are working.
 3. Full evaluation: Reproduce all the main results in the paper.
 
 ## Environment Setup
@@ -19,16 +19,16 @@ To save your time, we've preprocessed the datasets in advance and saved them to 
 ## Kick-the-tires
 *15 human-minutes + 15 compute-minutes*
 
-Follow the steps below to create a instance with two `A100 SXM 80GB` GPUs on [RunPod](https://www.runpod.io/) with template `DistLLM-AE-GPU`: 
+Follow the steps below to create a instance with two `A100 SXM 80GB` GPUs on [RunPod](https://www.runpod.io/) with template `DistServe-AE-GPU`: 
 - Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
 - Switch the account from `osdi24ae` to `Hao Lab@UCSD` using the upper right button.
 - Click `Pods` in the left toolbar.
 - Click `+ Deploy`.
 - Choose `A100 SXM 80GB`.
-- Click `Change Template` and choose `DistLLM-AE-GPU`.
+- Click `Change Template` and choose `DistServe-AE-GPU`.
 - Choose `GPU Count`: For Kick-the-tires, 2 GPUs are sufficient, which is usually always available on RunPod. 
 - Click `Deploy On-Demand`: If the button is grey, it means this resource is not currently available.
-- We suggest you to change the instance name to `DistLLM-AE-GPU-<your_reviewer_id>`, to distinguish it from other reviewers' instances and avoid conflicts with other reviewers. To achieve this, please navigate to the `Pods` page, click on the down arrow on the right side of the instance name, click on the pencil icon next to the instance name, and change the name to `DistLLM-AE-GPU-<your_reviewer_id>`.
+- We suggest you to change the instance name to `DistServe-AE-GPU-<your_reviewer_id>`, to distinguish it from other reviewers' instances and avoid conflicts with other reviewers. To achieve this, please navigate to the `Pods` page, click on the down arrow on the right side of the instance name, click on the pencil icon next to the instance name, and change the name to `DistServe-AE-GPU-<your_reviewer_id>`.
 
 
 When the instance is started, you can ssh into the instance  in your terminal. Remember to provide your public key on the hotcrp so that we can give you the access to the instance you create. Here are some high-level overviews and notes:
@@ -36,9 +36,7 @@ When the instance is started, you can ssh into the instance  in your terminal. R
 - We will use a wrapper script, `/app/distserve/distserve/evaluation/2-benchmark-serving/2-start-api-server.py`, to launch the API server. The script will print the command it uses to launch the server, which can be used to inspect the startup parameters.
 - The load generator locates at `/app/distserve/distserve/evaluation/2-benchmark-serving/2-benchmark-serving.py`. Given a target dataset and a list of (num_prompt, request_rate)s, it runs serval rounds of experiments, each with a given (num_prompt, request_rate) pair, and save the result to a file located at `/workspace/exp-results/<model-name>-<dataset-name>/<backend>-<num_prompt>-<request_rate>.exp`, for example, `/workspace/exp-results/opt-13b-sharegpt/vllm-50-2.exp`
 
-*Note. "DistServe" and "DistLLM" are used interchangeably in the codebase, they are the same thing.*
-
-Now we can run some toy examples to verify DistLLM and vLLM are working:
+Now we can run some toy examples to verify DistServe and vLLM are working:
 
 ### vLLM
 
@@ -58,7 +56,7 @@ In the script we add the `--verbose` flag to print out all prompts && responses 
 
 Ideally it should run without any error, and generate a file `/workspace/exp-results/opt-125m-sharegpt/vllm-10-1.exp`.
 
-### DistLLM
+### DistServe
 
 On the `S-terminal`, execute 
 ```bash
@@ -83,7 +81,7 @@ Ideally it should generate a file `/workspace/exp-results/opt-125m-sharegpt/dist
 ### End-to-end Experiments (Section 6.2, Figure. 8 + Figure. 9)
 *15 human-minutes + 90 compute-minutes*
 
-The OPT-175B experiment of DistLLM requires four 8xA100-SXM-80GB machines. On common cloud providers like AWS or RunPod, this experiment costs over 2000$ in total for each run. Due to the limited budget, it is too expensive for us to reproduce the OPT-175B experiment (Figure. 8c) so we reuse the data in our paper. But we do provide the scripts for interested ones who have enough resources to produce the results by themselves.
+The OPT-175B experiment of DistServe requires four 8xA100-SXM-80GB machines. On common cloud providers like AWS or RunPod, this experiment costs over 2000$ in total for each run. Due to the limited budget, it is too expensive for us to reproduce the OPT-175B experiment (Figure. 8c) so we reuse the data in our paper. But we do provide the scripts for interested ones who have enough resources to produce the results by themselves.
 
 For OPT-13B and OPT-66B End-to-end Experiments, 8 GPUs are required and we provide a script to grab the machine automatically because 8xA100-SXM machine is a ridiculously popular resource on clouds and it usually takes over 1 day to grab the machine. For instructions on how to use this script, please refer to [this file](grab-machine.md).
 
@@ -108,7 +106,7 @@ bash /app/distserve/distserve/evaluation/ae-scripts/e2e/opt-13b-vllm-client.sh
 Wait until the client finishes (i.e. exits without any error)
 
 ---
-Then for DistLLM:
+Then for DistServe:
 
 On the `S-terminal`, execute 
 ```bash
@@ -144,7 +142,7 @@ Wait until the client finishes (i.e. exits without any error)
 
 ---
 
-Then for DistLLM:
+Then for DistServe:
 
 On the `S-terminal`, execute 
 ```bash
@@ -169,7 +167,7 @@ Plots will be saved under `/workspace/plots`.
 
 ### Latency Breakdown (Section 6.3, Figure. 10) 
 
-Due to the same budget reason, we cannot afford to reproduce the OPT-175B experiment in the left figure of Figure. 10. However, we provide a OPT-66B version which can also verify our claim in this Section that the transmission time is negligible compared to computation in DistLLM.
+Due to the same budget reason, we cannot afford to reproduce the OPT-175B experiment in the left figure of Figure. 10. However, we provide a OPT-66B version which can also verify our claim in this Section that the transmission time is negligible compared to computation in DistServe.
 
 We also provide the [screencast](https://drive.google.com/drive/folders/1QCEkpV4Wi2WUutFnDR46NrsSTDXr8lL3?usp=sharing) of producing the results in Figure. 10 in case the reviewers do not want to experience the machine-grabbing process.
 
@@ -186,13 +184,13 @@ to generate Figure. 10. Plots will be saved under `/workspace/plots`.
 
 The ablation study is CPU-only. We preferred you allocate `RTX3090` or `L40S` where 32 vCPU instance is available. 
 
-Follow the steps below to create a instance with one `RTX3090` GPU instance on [RunPod](https://www.runpod.io/) with template `DistLLM-AE-GPU`: 
+Follow the steps below to create a instance with one `RTX3090` GPU instance on [RunPod](https://www.runpod.io/) with template `DistServe-AE-GPU`: 
 - Log in to [RunPod](https://www.runpod.io/) with the credentials provided in hotcrp.
 - Switch the account from `osdi24ae` to `Hao Lab@UCSD` using the upper right button.
 - Click `Pods` in the left toolbar.
 - Click `+ Deploy`.
 - Choose `RTX 3090`. Note that `vCPU` is 32.
-- Click `Change Template` and choose `DistLLM-AE-GPU`.
+- Click `Change Template` and choose `DistServe-AE-GPU`.
 - Choose `GPU Count`: 1 GPUs is sufficient for this experiment. 
 - Click `Deploy On-Demand`: If the button is grey, it means this resource is not currently available.
 

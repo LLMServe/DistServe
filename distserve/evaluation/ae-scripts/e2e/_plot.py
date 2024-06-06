@@ -22,7 +22,7 @@ class Backend:
     marker: str = "o"
 
 EXP_RESULT_ROOT="/workspace/exp-results"
-SYSNAME="DistLLM"
+SYSNAME="DistServe"
 
 def load_result(exp_result_dir: str, backend: Backend, per_gpu_num_prompt: int, per_gpu_request_rate: float) -> list[RequestResult]:
     possible_paths = [

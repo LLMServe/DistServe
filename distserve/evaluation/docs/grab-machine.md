@@ -17,7 +17,7 @@ When you successfully grab a machine, you will see the following message:
 Pod deployed successfully
 ```
 
-After seeing this message, you can visit [RunPod](https://www.runpod.io/), login into the account we provide, switch the account to `Hao Lab@UCSD`, click "Pods" on the left panel, click on the instance with the name "DistLLM-AE-GPU", and connect to it via the `SSH over exposed TCP: (Supports SCP & SFTP)` command suggested on the website (it's recommended to remove `-i ~/.ssh/id_ed25519` at the end of the command).
+After seeing this message, you can visit [RunPod](https://www.runpod.io/), login into the account we provide, switch the account to `Hao Lab@UCSD`, click "Pods" on the left panel, click on the instance with the name "DistServe-AE-GPU", and connect to it via the `SSH over exposed TCP: (Supports SCP & SFTP)` command suggested on the website (it's recommended to remove `-i ~/.ssh/id_ed25519` at the end of the command).
 
 The time to grab the machine ranges from several hours to even days. It is appreciated that you check the script every hour to avoid wasting GPU hours when you get the machine and stop the instance when you finish the review process to save money for us :)
 

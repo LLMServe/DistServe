@@ -56,7 +56,7 @@ def check_dataset_env_var():
         return
     raise KeyError(
         "Please set the environment variable `DATASET` to the path of the workload datasets. "
-        "For user who started the environment with `DistLLM-AE-GPU` docker image, "
+        "For user who started the environment with `DistServe-AE-GPU` docker image, "
         "simply do:\nexport DATASET=`/app/dataset`\n"
         "See the `repro-dataset.md` to prepare for workload dataset if you are using your custom environment."
     )

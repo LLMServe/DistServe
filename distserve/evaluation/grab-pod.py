@@ -14,7 +14,7 @@ import time
 import random
 
 def request_pod(api_key: str, num_gpus: int):
-    data = '{"query": "mutation { podFindAndDeployOnDemand( input: { cloudType: SECURE, gpuCount: ' + str(num_gpus) + ', volumeInGb: 64, containerDiskInGb: 512, minVcpuCount: 32, minMemoryInGb: 128, gpuTypeId: \\"NVIDIA A100-SXM4-80GB\\", name: \\"DistLLM-AE-GPU\\", startJupyter: false, startSsh: true, templateId: \\"xbivg6n3b6\\", volumeKey: null, dockerArgs: \\"\\", ports: \\"8080/http,22/tcp,8000/tcp\\", dataCenterId: null, volumeMountPath: \\"/workspace\\", networkVolumeId:null, env: [] } ) { id imageName env machineId machine { podHostId } } }"}'
+    data = '{"query": "mutation { podFindAndDeployOnDemand( input: { cloudType: SECURE, gpuCount: ' + str(num_gpus) + ', volumeInGb: 64, containerDiskInGb: 512, minVcpuCount: 32, minMemoryInGb: 128, gpuTypeId: \\"NVIDIA A100-SXM4-80GB\\", name: \\"DistServe-AE-GPU\\", startJupyter: false, startSsh: true, templateId: \\"xbivg6n3b6\\", volumeKey: null, dockerArgs: \\"\\", ports: \\"8080/http,22/tcp,8000/tcp\\", dataCenterId: null, volumeMountPath: \\"/workspace\\", networkVolumeId:null, env: [] } ) { id imageName env machineId machine { podHostId } } }"}'
     print("Payload:", data)
     response = requests.post('https://api.runpod.io/graphql?api_key=' + api_key, headers={'content-type': 'application/json'}, data=data)
     print(response.text)

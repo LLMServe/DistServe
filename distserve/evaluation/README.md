@@ -13,14 +13,14 @@ This folder contains the following subfolders:
 - `2-benchmark-serving`: Scripts for benchmarking the online serving performance of DistServe, vLLM, and DeepSpeed-MII.
 - `Dockerfile.evaluation`: Dockerfile for building the image for artifact evaluation.
 
-## Building the Docker Image
+## Building the Docker Image for Artifact Evaluation
 
-NOTE. This docker image is for the artifact evaluation process only. To deploy DistServe, please refer to the dockerfile in the root directory.
+NOTE. This docker image is for the artifact evaluation process only. To deploy DistServe, please refer to the instructions in the project's README.
 
-To build the Docker image, please:
+To build the Docker image, please run:
 
 ```bash
-# (Assume your current working directory is distserve/evaluation)
+# (Assume your current working directory is DistServe/evaluation)
 
 # Clone the (modified) version of vLLM
 git clone https://github.com/interestingLSY/vllm.git --branch distserve-baseline-vllm
