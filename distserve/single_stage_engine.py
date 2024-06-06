@@ -403,10 +403,14 @@ class ContextStageLLMEngine(SingleStageLLMEngine):
                 generated_tokens_ids = await self.batches_ret_futures[0]
                     
                 end_time = time.time()
-                generated_tokens = [
-                    self.tokenizer.decode(gen_token_id)
-                    for gen_token_id in generated_tokens_ids
-                ]
+                generated_tokens = []
+                for gen_token_id in generated_tokens_ids:
+                    try:
+                        token = self.tokenizer.decode(gen_token_id)
+                    except Exception as e:
+                        print(f"(context) Warning: Cannot decode token with id {gen_token_id}. Error: {e}")
+                        token = ""
+                    generated_tokens.append(token)
 
                 finished_batch = self.batches_in_pipeline[0]
                 finished_batch.finish_one_iteration(
@@ -645,10 +649,14 @@ class DecodingStageLLMEngine(SingleStageLLMEngine):
             else:
                 generated_tokens_ids = await self.batches_ret_futures[0]
                 end_time = time.time()
-                generated_tokens = [
-                    self.tokenizer.decode(gen_token_id)
-                    for gen_token_id in generated_tokens_ids
-                ]
+                generated_tokens = []
+                for gen_token_id in generated_tokens_ids:
+                    try:
+                        token = self.tokenizer.decode(gen_token_id)
+                    except Exception as e:
+                        print(f"(decoding) Warning: Cannot decode token with id {gen_token_id}. Error: {e}")
+                        token = ""
+                    generated_tokens.append(token)
 
                 finished_batch = self.batches_in_pipeline[0]
                 finished_batch.finish_one_iteration(

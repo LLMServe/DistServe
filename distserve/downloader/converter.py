@@ -24,6 +24,7 @@ import os
 import re
 import torch
 import tqdm
+import argparse
 
 from glob import glob
 from torch import nn
@@ -442,3 +443,21 @@ def convert_weights(
     name_translator = NAME_TRANSLATOR[model]
     divideWeightAndSave(output, tensor_dict, name_translator, num_q_heads, head_dim)
     
+#######################
+#    CLI Interface    #
+#######################
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert weights from other models to SwiftTransformer's format")
+    parser.add_argument("--input", type=str, required=True, help="Path to input weights")
+    parser.add_argument("--output", type=str, required=True, help="Path to output weights")
+    parser.add_argument("--dtype", type=str, default="float16", help="dtype of the weights")
+    parser.add_argument("--model", type=str, required=True, help="Model type")
+    args = parser.parse_args()
+
+    dtype = {
+        "float16": torch.float16,
+        "float32": torch.float32
+    }[args.dtype]
+
+    convert_weights(args.input, args.output, dtype, args.model)

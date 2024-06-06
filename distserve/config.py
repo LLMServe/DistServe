@@ -221,6 +221,17 @@ class ModelConfig:
     def get_head_size(self) -> int:
         return self.hf_config.hidden_size // self.hf_config.num_attention_heads
 
+    def get_ffn_inter_dim(self) -> int:
+        # For LLaMA-2:
+        return self.hf_config.intermediate_size
+
+    def get_q_heads(self, parallel_config: ParallelConfig = ParallelConfig()) -> int:
+        # For LLaMA-2:
+        return (
+            self.hf_config.num_attention_heads
+                // parallel_config.tensor_parallel_size
+        )
+    
     def get_num_heads(self, parallel_config: ParallelConfig = ParallelConfig()) -> int:
         # For GPTBigCode & Falcon:
         # Note: for falcon, when new_decoder_architecture is True, the
