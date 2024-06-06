@@ -46,7 +46,7 @@ To run online inference, you need to launch the DistServe API server, see the co
 
 ### Evaluation
 
-To reproduce all the experiments in our paper, please follow the the [guidance](./evaluation/README.md).
+To reproduce all the experiments in our paper, please follow the [guidance](./evaluation/README.md).
 
 ## Citation
 If you use DistServe for your research, please cite our [paper](https://arxiv.org/abs/2401.09670):
