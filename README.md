@@ -38,7 +38,7 @@ DistServe relies on [Ray](https://ray.io) to implement distributed workers. If y
 
 ### Run offline example
 
-DistServe requires at least two GPUs to play with. We provide an offline inference example in `distserve/exmples/offline.py`.
+DistServe requires at least two GPUs to play with. We provide an offline inference example in `distserve/examples/offline.py`.
 
 ### Run online example
 
