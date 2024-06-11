@@ -172,9 +172,6 @@ class LLMEngine:
         Currently we force the same layer of the context & decoding stage to be executed
         on the same node (we call this "aligned"). This simplifies k/v cache migration.
         """
-        if self.simulator_config.is_simulator_mode:
-            return None
-        
         context_pp = self.disagg_parallel_config.context.pipeline_parallel_size
         context_tp = self.disagg_parallel_config.context.tensor_parallel_size
         decoding_pp = self.disagg_parallel_config.decoding.pipeline_parallel_size
