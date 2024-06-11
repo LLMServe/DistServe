@@ -46,6 +46,8 @@ DistServe requires at least two GPUs to play with. We provide an offline inferen
 
 To run online inference, you need to launch the DistServe API server, see the comments in `distserve/api_server/distserve_api_server.py`.
 
+Then launch the client example in `examples/online.py`.
+
 ### Evaluation
 
 To reproduce all the experiments in our paper, please follow the [guidance](./evaluation/README.md).

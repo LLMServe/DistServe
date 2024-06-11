@@ -89,7 +89,7 @@ async def generate(request: Request) -> Response:
             async for step_output in results_generator:
                 text_output = step_output.request.get_response()
                 ret = {"text": text_output}
-                yield (json.dumps(ret) + "\0").encode("utf-8")
+                yield (json.dumps(ret)).encode("utf-8")
 
         async def abort_request() -> None:
             await engine.abort(request_id)
