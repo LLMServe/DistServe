@@ -30,7 +30,6 @@ from distserve.single_stage_engine import (
     DecodingStageLLMEngine
 )
 from distserve.lifetime import LifetimeEvent, LifetimeEventType
-from distserve.simulator.config import SimulatorConfig
 
 logger = init_logger(__name__)
 
@@ -89,15 +88,13 @@ class LLMEngine:
         disagg_parallel_config: DisaggParallelConfig,
         cache_config: CacheConfig,
         context_sched_config: ContextStageSchedConfig,
-        decoding_sched_config: DecodingStageSchedConfig,
-        simulator_config: SimulatorConfig
+        decoding_sched_config: DecodingStageSchedConfig
     ):
         self.model_config = model_config
         self.disagg_parallel_config = disagg_parallel_config
         self.cache_config = cache_config
         self.context_sched_config = context_sched_config
         self.decoding_sched_config = decoding_sched_config
-        self.simulator_config = simulator_config
 
         self.request_counter = Counter()
         self.tokenizer = get_tokenizer(
@@ -118,7 +115,6 @@ class LLMEngine:
             disagg_parallel_config.context,
             cache_config,
             context_sched_config,
-            simulator_config,
             placement_groups,
             self._on_new_step_output_callback,
             self._on_new_lifetime_event_callback
@@ -131,7 +127,6 @@ class LLMEngine:
             disagg_parallel_config.decoding,
             cache_config,
             decoding_sched_config,
-            simulator_config,
             placement_groups,
             self.context_engine.clear_migrated_blocks_callback,
             self._on_new_step_output_callback,
