@@ -67,6 +67,8 @@ outputs = llm.generate(prompts=prompts, sampling_params=sampling_params)
 
 # Print the outputs.
 for prompt, step_outputs in zip(prompts, outputs):
+    # new_token_ids = [step_output.new_token_id for step_output in step_outputs]
+    # output_text = llm.tokenizer.decode(new_token_ids)
     print(
-        f"Prompt: {prompt!r}, Generated text: {''.join([step_output.new_token for step_output in step_outputs])} ({len(step_outputs)} tokens generated)."
+        f"Prompt: {prompt!r}, Generated text: {' '.join([step_output.new_token for step_output in step_outputs])} ({len(step_outputs)} tokens generated)."
     )
