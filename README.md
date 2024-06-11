@@ -18,7 +18,7 @@ It supports:
 ## Build && Install
 ```shell
 # clone the project
-git clone git@github.com:LLMServe/DistServe.git && cd DistServe
+git clone https://github.com/LLMServe/DistServe.git && cd DistServe
 
 # setup the distserve conda environment
 conda env create -f environment.yml && conda activate distserve
