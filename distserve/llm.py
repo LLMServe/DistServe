@@ -17,7 +17,6 @@ from distserve.single_stage_engine import StepOutput
 from distserve.engine import LLMEngine
 from distserve.logger import init_logger
 from distserve.request import Request, SamplingParams
-from distserve.simulator.config import SimulatorConfig
 
 
 logger = init_logger(__name__)
@@ -107,16 +106,14 @@ class AsyncLLM:
         disagg_parallel_config: DisaggParallelConfig,
         cache_config: CacheConfig,
         context_sched_config: ContextStageSchedConfig,
-        decoding_sched_config: DecodingStageSchedConfig,
-        simulator_config: Optional[SimulatorConfig]
+        decoding_sched_config: DecodingStageSchedConfig
     ):
         self.engine = LLMEngine(
             model_config,
             disagg_parallel_config,
             cache_config,
             context_sched_config,
-            decoding_sched_config,
-            simulator_config
+            decoding_sched_config
         )
         
         asyncio.run(self.engine.initialize())
@@ -164,11 +161,6 @@ class AsyncLLM:
                 num_queues_for_prediction=args.decoding_num_queues_for_prediction,
                 use_skip_join=args.decoding_use_skip_join,
                 waiting_block_prop_threshold=0.05
-            ),
-            simulator_config=SimulatorConfig(
-                is_simulator_mode=args.simulator_mode,
-                profiler_data_path=args.profiler_data_path,
-                gpu_mem_size_gb=args.gpu_mem_size_gb
             )
         )
 

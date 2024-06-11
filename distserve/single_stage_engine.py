@@ -27,9 +27,6 @@ from distserve.block_manager import BlockManager
 from distserve.worker import ParaWorker
 from distserve.context_stage_scheduler import ContextStageSchedConfig, ContextStageScheduler, get_context_stage_scheduler
 from distserve.decoding_stage_scheduler import DecodingStageSchedConfig, DecodingStageScheduler, get_decoding_stage_scheduler
-from distserve.simulator.config import SimulatorConfig
-from distserve.simulator.simulated_worker import SimulatedWorker
-from distserve.simulator.utils import Barrier
 
 logger = init_logger(__name__)
 
@@ -90,7 +87,6 @@ class SingleStageLLMEngine(ABC):
         parallel_config: ParallelConfig,
         cache_config: CacheConfig,
         sched_config: ContextStageSchedConfig | DecodingStageSchedConfig,
-        simulator_config: SimulatorConfig,
         placement_groups: List[PlacementGroup],
         engine_on_new_step_output_callback: Callable[[int, StepOutput], None],   # The LLMEngine's callback function when a new StepOutput of a particular request is generated
         engine_on_new_lifetime_event_callback: Optional[Callable[[int, LifetimeEvent, bool], None]] = None,   # The LLMEngine's callback function when a new LifetimeEvent of a particular request is generated
@@ -100,7 +96,6 @@ class SingleStageLLMEngine(ABC):
         self.parallel_config = parallel_config
         self.cache_config = cache_config
         self.sched_config = sched_config
-        self.simulator_config = simulator_config
         self.engine_on_new_step_output_callback = engine_on_new_step_output_callback
         self.engine_on_new_lifetime_event_callback = engine_on_new_lifetime_event_callback
 
@@ -153,62 +148,41 @@ class SingleStageLLMEngine(ABC):
         the worker will be placed in the corresponding placement group
         """
         logger.info("Initializing workers")
+
+        layer_per_placement_group = self.model_config.get_num_layers() // len(self.placement_groups)
+        layer_per_pp = self.model_config.get_num_layers(self.parallel_config)
+        pp_per_placement_group = layer_per_placement_group // layer_per_pp
         
-        if self.simulator_config.is_simulator_mode:
-            for i in range(self.parallel_config.pipeline_parallel_size):
-                workers = []
-                tensor_parallel_barrier = Barrier(self.parallel_config.tensor_parallel_size)
-                for j in range(self.parallel_config.tensor_parallel_size):
-                    tmp_parallel_config = copy.deepcopy(self.parallel_config)
-                    tmp_parallel_config.pipeline_parallel_rank = i
-                    tmp_parallel_config.tensor_parallel_rank = j
-                    worker = SimulatedWorker(
-                        worker_id=(i*self.parallel_config.tensor_parallel_size+j),
-                        stage=self.stage,
-                        model_config=self.model_config,
-                        cache_config=self.cache_config,
-                        simulator_config=self.simulator_config,
-                        parallel_config=tmp_parallel_config,
-                        tensor_parallel_barrier=tensor_parallel_barrier,
-                    )
-                    workers.append(worker)
-                self.workers.append(workers)
+        pp_id = copy.deepcopy(torch.ops.nccl_ops.generate_nccl_id())
         
-        else:
-            layer_per_placement_group = self.model_config.get_num_layers() // len(self.placement_groups)
-            layer_per_pp = self.model_config.get_num_layers(self.parallel_config)
-            pp_per_placement_group = layer_per_placement_group // layer_per_pp
-            
-            pp_id = copy.deepcopy(torch.ops.nccl_ops.generate_nccl_id())
-            
-            init_handlers = []
-            for i in range(self.parallel_config.pipeline_parallel_size):
-                workers = []
-                placement_group_index = i // pp_per_placement_group
-                tp_id = copy.deepcopy(torch.ops.nccl_ops.generate_nccl_id())
-                cur_placement_group = self.placement_groups[placement_group_index]
-                for j in range(self.parallel_config.tensor_parallel_size):
-                    tmp_parallel_config = copy.deepcopy(self.parallel_config)
-                    tmp_parallel_config.pipeline_parallel_rank = i
-                    tmp_parallel_config.tensor_parallel_rank = j
-                    worker = ParaWorker.options(
-                        scheduling_strategy=PlacementGroupSchedulingStrategy(
-                            placement_group=cur_placement_group
-                        )
-                    ).remote(
-                        worker_id=(i*self.parallel_config.tensor_parallel_size+j),
-                        stage=self.stage,
-                        model_config=self.model_config,
-                        cache_config=self.cache_config,
-                        parallel_config=tmp_parallel_config,
-                        pipeline_parallel_id=pp_id,
-                        tensor_parallel_id=tp_id,
+        init_handlers = []
+        for i in range(self.parallel_config.pipeline_parallel_size):
+            workers = []
+            placement_group_index = i // pp_per_placement_group
+            tp_id = copy.deepcopy(torch.ops.nccl_ops.generate_nccl_id())
+            cur_placement_group = self.placement_groups[placement_group_index]
+            for j in range(self.parallel_config.tensor_parallel_size):
+                tmp_parallel_config = copy.deepcopy(self.parallel_config)
+                tmp_parallel_config.pipeline_parallel_rank = i
+                tmp_parallel_config.tensor_parallel_rank = j
+                worker = ParaWorker.options(
+                    scheduling_strategy=PlacementGroupSchedulingStrategy(
+                        placement_group=cur_placement_group
                     )
-                    workers.append(worker)
-                    init_handlers.append(worker.ready.remote())
-                self.workers.append(workers)
-                
-            await asyncio.wait(init_handlers)
+                ).remote(
+                    worker_id=(i*self.parallel_config.tensor_parallel_size+j),
+                    stage=self.stage,
+                    model_config=self.model_config,
+                    cache_config=self.cache_config,
+                    parallel_config=tmp_parallel_config,
+                    pipeline_parallel_id=pp_id,
+                    tensor_parallel_id=tp_id,
+                )
+                workers.append(worker)
+                init_handlers.append(worker.ready.remote())
+            self.workers.append(workers)
+            
+        await asyncio.wait(init_handlers)
 
     async def _init_model(self):
         """
@@ -222,18 +196,11 @@ class SingleStageLLMEngine(ABC):
         Profile available blocks and initialize k/v cache on all workers
         """
         logger.info("Profiling available blocks")
-        if self.simulator_config.is_simulator_mode:
-            num_gpu_blocks, num_cpu_blocks = self.workers[0][0]._profile_num_available_blocks(
-                self.cache_config.block_size,
-                self.cache_config.gpu_memory_utilization,
-                self.cache_config.cpu_swap_space,
-            )
-        else:
-            num_gpu_blocks, num_cpu_blocks = await self.workers[0][0]._profile_num_available_blocks.remote(
-                self.cache_config.block_size,
-                self.cache_config.gpu_memory_utilization,
-                self.cache_config.cpu_swap_space,
-            )
+        num_gpu_blocks, num_cpu_blocks = await self.workers[0][0]._profile_num_available_blocks.remote(
+            self.cache_config.block_size,
+            self.cache_config.gpu_memory_utilization,
+            self.cache_config.cpu_swap_space,
+        )
             
         logger.info(f"Profiling result: num_gpu_blocks: {num_gpu_blocks}, num_cpu_blocks: {num_cpu_blocks}")
         if self.stage == Stage.CONTEXT:
@@ -259,24 +226,11 @@ class SingleStageLLMEngine(ABC):
         """
         call func_name asynchronously on all workers, return the futures immediately
         """
-        if self.simulator_config.is_simulator_mode:
-            handlers = []
-            for stage in self.workers:
-                for worker in stage:
-                    item = getattr(worker, func_name)(*args)
-                    if asyncio.iscoroutine(item):
-                        handlers.append(asyncio.create_task(item))
-                    else:
-                        async def wrapper():
-                            return item
-                        handlers.append(asyncio.create_task(wrapper()))
-            return handlers
-        else:
-            handlers = []
-            for stage in self.workers:
-                for worker in stage:
-                    handlers.append(getattr(worker, func_name).remote(*args))
-            return handlers
+        handlers = []
+        for stage in self.workers:
+            for worker in stage:
+                handlers.append(getattr(worker, func_name).remote(*args))
+        return handlers
 
     def abort_request(self, request_id: int):
         """
@@ -314,7 +268,6 @@ class ContextStageLLMEngine(SingleStageLLMEngine):
         parallel_config: ParallelConfig,
         cache_config: CacheConfig,
         sched_config: ContextStageSchedConfig,
-        simulator_config: SimulatorConfig,
         placement_groups: List[PlacementGroup],
         engine_on_new_step_output_callback: Callable[[int, StepOutput], None],
         engine_on_new_lifetime_event_callback: Callable[[int, LifetimeEvent, bool], None]
@@ -325,7 +278,6 @@ class ContextStageLLMEngine(SingleStageLLMEngine):
             parallel_config,
             cache_config,
             sched_config,
-            simulator_config,
             placement_groups,
             engine_on_new_step_output_callback,
             engine_on_new_lifetime_event_callback
@@ -490,7 +442,6 @@ class DecodingStageLLMEngine(SingleStageLLMEngine):
         parallel_config: ParallelConfig,
         cache_config: CacheConfig,
         sched_config: DecodingStageSchedConfig,
-        simulator_config: SimulatorConfig,
         placement_groups: List[PlacementGroup],
         clear_migrated_blocks_callback: Callable[[Request], None],
         engine_on_new_step_output_callback: Callable[[int, StepOutput], None],
@@ -502,7 +453,6 @@ class DecodingStageLLMEngine(SingleStageLLMEngine):
             parallel_config,
             cache_config,
             sched_config,
-            simulator_config,
             placement_groups,
             engine_on_new_step_output_callback,
             engine_on_new_lifetime_event_callback

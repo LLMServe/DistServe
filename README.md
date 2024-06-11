@@ -18,13 +18,15 @@ It supports:
 ## Build && Install
 ```shell
 # clone the project
-git clone git@github.com:LLMServe/DistServe.git && cd DistServe
+git clone https://github.com/LLMServe/DistServe.git && cd DistServe
 
 # setup the distserve conda environment
 conda env create -f environment.yml && conda activate distserve
 
 # clone and build the SwiftTransformer library  
-git clone https://github.com/LLMServe/SwiftTransformer.git && cd SwiftTransformer && git submodule update --init --recursive && cmake -B build && cmake --build build -j$(nproc) && cd ..
+git clone https://github.com/LLMServe/SwiftTransformer.git && cd SwiftTransformer && git submodule update --init --recursive
+cmake -B build && cmake --build build -j$(nproc)
+cd ..
 
 # install distserve
 pip install -e .
@@ -38,11 +40,13 @@ DistServe relies on [Ray](https://ray.io) to implement distributed workers. If y
 
 ### Run offline example
 
-DistServe requires at least two GPUs to play with. We provide an offline inference example in `distserve/examples/offline.py`.
+DistServe requires at least two GPUs to play with. We provide an offline inference example in `examples/offline.py`.
 
 ### Run online example
 
 To run online inference, you need to launch the DistServe API server, see the comments in `distserve/api_server/distserve_api_server.py`.
+
+Then launch the client example in `examples/online.py`.
 
 ### Evaluation
 
