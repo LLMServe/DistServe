@@ -24,7 +24,9 @@ git clone https://github.com/LLMServe/DistServe.git && cd DistServe
 conda env create -f environment.yml && conda activate distserve
 
 # clone and build the SwiftTransformer library  
-git clone https://github.com/LLMServe/SwiftTransformer.git && cd SwiftTransformer && git submodule update --init --recursive && cmake -B build && cmake --build build -j$(nproc) && cd ..
+git clone https://github.com/LLMServe/SwiftTransformer.git && cd SwiftTransformer && git submodule update --init --recursive
+cmake -B build && cmake --build build -j$(nproc)
+cd ..
 
 # install distserve
 pip install -e .
