@@ -154,12 +154,7 @@ class AsyncLLM:
                 policy=args.decoding_sched_policy,
                 max_batch_size=args.decoding_max_batch_size,
                 max_tokens_per_batch=args.decoding_max_tokens_per_batch,
-                profiling_file=args.decoding_profiling_file,
                 model_name=args.model,
-                proactive_offloading=args.decoding_proactive_offloading,
-                num_min_free_blocks_threshold=args.decoding_num_min_free_blocks_threshold,
-                num_queues_for_prediction=args.decoding_num_queues_for_prediction,
-                use_skip_join=args.decoding_use_skip_join,
                 waiting_block_prop_threshold=0.05
             )
         )
