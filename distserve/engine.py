@@ -327,7 +327,6 @@ def add_engine_cli_args(parser: argparse.ArgumentParser):
     parser.add_argument("--decoding-sched-policy", type=str, default="fcfs")
     parser.add_argument("--decoding-max-batch-size", type=int, default=256)
     parser.add_argument("--decoding-max-tokens-per-batch", type=int, default=8192)
-    parser.add_argument("--decoding-num-min-free-blocks-threshold", type=int, default=0)
     
     parser.add_argument("--simulator-mode", action="store_true")
     parser.add_argument("--profiler-data-path", type=str, default=None)
