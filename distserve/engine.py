@@ -318,7 +318,7 @@ def add_engine_cli_args(parser: argparse.ArgumentParser):
     parser.add_argument("--block-size", type=int, default=16)
     parser.add_argument("--max-num-blocks-per-req", type=int, default=256)
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
-    parser.add_argument("--swap-space", type=int, default=1)
+    parser.add_argument("--swap-space", type=int, default=16)
     
     parser.add_argument("--context-sched-policy", type=str, default="fcfs")
     parser.add_argument("--context-max-batch-size", type=int, default=256)
@@ -327,11 +327,6 @@ def add_engine_cli_args(parser: argparse.ArgumentParser):
     parser.add_argument("--decoding-sched-policy", type=str, default="fcfs")
     parser.add_argument("--decoding-max-batch-size", type=int, default=256)
     parser.add_argument("--decoding-max-tokens-per-batch", type=int, default=8192)
-    parser.add_argument("--decoding-profiling-file", type=str, default=None)
-    parser.add_argument("--decoding-proactive-offloading", action="store_true")
-    parser.add_argument("--decoding-num-min-free-blocks-threshold", type=int, default=0)
-    parser.add_argument("--decoding-num-queues-for-prediction", type=int, default=2)
-    parser.add_argument("--decoding-use-skip-join", action="store_true")
     
     parser.add_argument("--simulator-mode", action="store_true")
     parser.add_argument("--profiler-data-path", type=str, default=None)

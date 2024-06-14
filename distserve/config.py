@@ -124,12 +124,7 @@ class DecodingStageSchedConfig:
         policy: str,
         max_batch_size: int,
         max_tokens_per_batch: int,
-        profiling_file: str = None,
         model_name: str = None,
-        proactive_offloading: bool = True,
-        num_min_free_blocks_threshold: int = 0,
-        num_queues_for_prediction: int = 2,
-        use_skip_join: bool = True,
         waiting_block_prop_threshold: float = 0.05
     ):
         assert policy in [
@@ -141,12 +136,7 @@ class DecodingStageSchedConfig:
         self.policy = policy
         self.max_batch_size = max_batch_size
         self.max_tokens_per_batch = max_tokens_per_batch
-        self.profiling_file = profiling_file
         self.model_name = model_name
-        self.proactive_offloading = proactive_offloading
-        self.num_min_free_blocks_threshold = num_min_free_blocks_threshold
-        self.num_queues_for_prediction = num_queues_for_prediction
-        self.use_skip_join = use_skip_join
         self.waiting_block_prop_threshold = waiting_block_prop_threshold
 
 _TORCH_DTYPE_MAP = {"fp16": torch.half, "fp32": torch.float32}
