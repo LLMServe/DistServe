@@ -109,22 +109,11 @@ figure_11_vllm_high = figure_11_right_df[
     (figure_11_right_df['backend'] == 'vllm')
 ]
 figure_11_vllm_low = figure_11_right_df[
-    (figure_11_right_df['backend'] == 'vllm') & (figure_11_right_df['low_affin'])
+    (figure_11_right_df['backend'] == 'vllm')
+    & (figure_11_right_df['pp_prefill'] == 1)
     ]
 
 
-def get_top_config(df):
-    strictest_slo = min(slos)
-    r = df[df['slo'] == strictest_slo].sort_values(
-        by=['goodput@90', 'attainment'],
-        ascending=False,
-    ).iloc[0][[
-        "tp_prefill",
-        "pp_prefill",
-        "tp_decode",
-        "pp_decode",
-    ]]
-    return r
 
 
 big_df = big_df.sort_values(by=['per_gpu_rate', 'slo', ], ascending=False)

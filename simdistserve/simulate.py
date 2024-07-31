@@ -35,13 +35,19 @@ def parse_args():
     return args
 
 
-def find_best_config(config_to_best_per_gpu_rate):
+def find_best_config(config_to_best_per_gpu_rate, backend):
     best_config = None
     best_ngpu = float("inf")
     best_per_gpu_rate = 0
+    num_gpu = 0
     for config, per_gpu_rate in config_to_best_per_gpu_rate.items():
-        pp_cross, tp_prefill, pp_prefill, tp_decode, pp_decode = config
-        num_gpu = pp_cross * (tp_prefill * pp_prefill + tp_decode * pp_decode)
+        if backend == 'didstserve':
+            pp_cross, tp_prefill, pp_prefill, tp_decode, pp_decode = config
+            num_gpu = pp_cross * (tp_prefill * pp_prefill + tp_decode * pp_decode)
+        elif backend == 'vllm':
+            tp, pp = config
+            num_gpu = tp * pp
+
         if per_gpu_rate > best_per_gpu_rate or (per_gpu_rate == best_per_gpu_rate and num_gpu < best_ngpu):
             best_config = config
             best_per_gpu_rate = per_gpu_rate
@@ -79,9 +85,16 @@ if __name__ == '__main__':
         N=args.N,
     )
     # print(result)
-    best_config, best_per_gpu_rate = find_best_config(result)
-    pp_cross, tp_prefill, pp_prefill, tp_decode, pp_decode = best_config
-    print(f"Best per GPU rate: {best_per_gpu_rate:.2f}")
-    print(f"Best config: pp_cross={pp_cross}, "
-          f"tp_prefill={tp_prefill}, pp_prefill={pp_prefill}, "
-          f"tp_decode={tp_decode}, pp_decode={pp_decode}")
+
+    best_config, best_per_gpu_rate = find_best_config(result, args.backend)
+    if args.backend == "distserve":
+        pp_cross, tp_prefill, pp_prefill, tp_decode, pp_decode = best_config
+        print(f"Best per GPU rate: {best_per_gpu_rate:.2f}")
+        print(f"Best config: pp_cross={pp_cross}, "
+              f"tp_prefill={tp_prefill}, pp_prefill={pp_prefill}, "
+              f"tp_decode={tp_decode}, pp_decode={pp_decode}")
+    elif args.backend == "vllm":
+        tp, pp = best_config
+        print(f"Best per GPU rate: {best_per_gpu_rate:.2f}")
+        print(f"Best config:  "
+              f"tp={tp}, pp={pp}")

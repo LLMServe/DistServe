@@ -28,10 +28,10 @@ def run_binary_search(
         (pp_cross, tp_prefill, pp_prefill, tp_decode, pp_decode) = config
         num_gpu = pp_cross * (tp_prefill * pp_prefill + tp_decode * pp_decode)
         config_args = [
-            '--tp-prefill', f'{pp_cross * tp_prefill}',
+            '--tp-prefill', f'{tp_prefill}',
             '--pp-prefill', f'{pp_cross * pp_prefill}',
             '--tp-decode', f'{tp_decode}',
-            '--pp-decode', f'{pp_decode}',
+            '--pp-decode', f'{pp_cross * pp_decode}',
         ]
     else:
         (tp, pp) = config
@@ -39,8 +39,8 @@ def run_binary_search(
         config_args = [
             '--tp-prefill', f'{tp}',
             '--pp-prefill', f'{pp}',
-            '--tp-decode', f'{tp}',
-            '--pp-decode', f'{tp}',
+            '--tp-decode', 0,
+            '--pp-decode', 0,
         ]
 
     prefill_target, decode_target, prefill_containment, decode_containment = containment_targets
@@ -64,6 +64,7 @@ def run_binary_search(
         '--workload', 'sharegpt',
         '--slas', '[]',
         '--slo-scales', '[1]',
+        '--backend', backend,
     ]
 
     time_durations = []
