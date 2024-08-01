@@ -41,7 +41,7 @@ def find_best_config(config_to_best_per_gpu_rate, backend):
     best_per_gpu_rate = 0
     num_gpu = 0
     for config, per_gpu_rate in config_to_best_per_gpu_rate.items():
-        if backend == 'didstserve':
+        if backend == 'distserve':
             pp_cross, tp_prefill, pp_prefill, tp_decode, pp_decode = config
             num_gpu = pp_cross * (tp_prefill * pp_prefill + tp_decode * pp_decode)
         elif backend == 'vllm':
