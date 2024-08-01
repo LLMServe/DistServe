@@ -11,7 +11,7 @@ Find the optimal parallelism configuration for OPT-13B with ShareGPT workload in
 
 ### Dataset Preparation
 
-To reproduce the dataset, please follow [this instruction](../../distserve/evaluation/docs/repro-dataset.md).
+To reproduce the dataset, please follow [this instruction](../evaluation/docs/repro-dataset.md).
 For AE reviewers, we've preprocessed the datasets under `/app/dataset`.
 
 Set your environment variable `DATASET` to the folder with preprocessed ShareGPT dataset.

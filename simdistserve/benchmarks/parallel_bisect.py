@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from simdistserve.benchmarks.search_binary import run_binary_search
-from simdistserve.benchmarks.search_configs import get_distserve_configs
+from simdistserve.benchmarks.search_configs import get_distserve_configs, get_vllm_config
 from simdistserve.constants import ModelTypes
 
 # Restrict runtime to <= 32 CPU core.
@@ -17,7 +17,7 @@ MAX_CPU_COUNT = min(os.cpu_count() - 2, 32)
 
 
 def main(
-    num_node: int, num_gpu_per_node: int, model_type=ModelTypes.opt_13b,
+    num_node: int, num_gpu_per_node: int, model_type: ModelTypes,
     is_dist_high: bool = True,
     backend: str = "distserve", attainment=(200, 100, 90, 90),
     max_per_gpu_rate=5, esp=0.25, N=1000,
@@ -26,9 +26,14 @@ def main(
     """
     :return result: dict that maps config to the best_per_gpu_rate (int)
     """
-    configs = get_distserve_configs(
-        model_type, num_node, num_gpu_per_node, is_dist_high
-    )
+    if backend == "distserve":
+        configs = get_distserve_configs(
+            model_type, num_node, num_gpu_per_node, is_dist_high
+        )
+    elif backend == "vllm":
+        configs = get_vllm_config(
+            model_type, num_node * num_gpu_per_node
+        )
 
     processes = []
     # Add a multiproc shared dict
@@ -39,7 +44,7 @@ def main(
             proc = Process(
                 target=run_binary_search,
                 args=(
-                    ModelTypes.opt_13b, config,
+                    model_type, config,
                     backend, attainment,
                 ),
                 kwargs=dict(

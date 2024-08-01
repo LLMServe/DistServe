@@ -168,21 +168,33 @@ def main(args, outputs=None):
 
     # Run simulation
     env = simpy.Environment()
-    worker_config = WorkerConfig(
-        model_type=model_type,
-        TP=TP_Prefill, TP_Prefill=TP_Prefill, TP_Decode=TP_Prefill,
-        prefill_max_batch_size=10 ** 7,  # inf
-        decode_max_batch_size=10 ** 7,  # inf
-        prefill_max_tokens=prefill_max_tokens,
-        decode_max_tokens=decode_max_tokens,
-        enable_chunked_prefill=False,
-        engine_type=args.backend,
-    )
     if args.backend == 'vllm':
+        worker_config = WorkerConfig(
+            model_type=model_type,
+            TP=TP_Prefill, TP_Prefill=TP_Prefill, TP_Decode=TP_Prefill,
+            prefill_max_batch_size=10 ** 7,  # inf
+            decode_max_batch_size=10 ** 7,  # inf
+            prefill_max_tokens=prefill_max_tokens,
+            decode_max_tokens=decode_max_tokens,
+            enable_chunked_prefill=False,
+            engine_type=args.backend,
+        )
+
         cluster = VLLMCluster(
             env=env, PP=PP_prefill, worker_configs=worker_config,
         )
     elif args.backend == 'distserve':
+        worker_config = WorkerConfig(
+            model_type=model_type,
+            TP=TP_Prefill, TP_Prefill=TP_Prefill, TP_Decode=TP_Decode,
+            prefill_max_batch_size=10 ** 7,  # inf
+            decode_max_batch_size=10 ** 7,  # inf
+            prefill_max_tokens=prefill_max_tokens,
+            decode_max_tokens=decode_max_tokens,
+            enable_chunked_prefill=False,
+            engine_type=args.backend,
+        )
+
         cluster = DisaggCluster(
             env=env, PP_prefill=PP_prefill, PP_decode=PP_decode,
             worker_configs=worker_config,
