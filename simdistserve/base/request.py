@@ -7,6 +7,8 @@ E_WAIT_PREFILL = "wait_prefill"
 E_DO_PREFILL = "do_prefill"
 E_WAIT_DECODE = "wait_decode"
 E_DO_DECODE = "do_decode"
+E_WAIT_KVCACHE_MIGRATION = "wait_kvcache_migration"
+E_DO_KVCACHE_MIGRATION = "do_kvcache_migration"
 E_FINISH_PREFILL = "finish_prefill"
 E_FINISH_DECODE = "finish_decode"
 E_EXIT_SYSTEM = "exit_system"
@@ -61,6 +63,11 @@ class Request:
         # set this value if a request belongs to a particular chunk
         # The last worker in the pipeline unset this value at a chunk's end.
         self.chunk_id = None
+        # after the request is finished prefill, `kvcache_generated` should be set to `True`.
+        self.kvcache_generated = False
+        self.prefill_is_done = False
+        self.kvcache_is_transferred = False
+        self.prefill_worker = None
 
     @property
     def current_context_len(self):
@@ -88,6 +95,12 @@ class Request:
 
     def do_decode(self, wid=None):
         self._log_event(E_DO_DECODE, wid=wid)
+        
+    def wait_kvcache_migration(self, wid=None):
+        self._log_event(E_WAIT_KVCACHE_MIGRATION, wid=wid)
+    
+    def do_kvcache_migration(self, wid=None):
+        self._log_event(E_DO_KVCACHE_MIGRATION, wid=wid)
 
     def _reset_chunked_prefill_metadata(self):
         """Reset the metadata of chunked prefill."""
@@ -111,6 +124,7 @@ class Request:
         # Reset counter to 0
         # TODO: Should we do self.counter += 1?
         self.counter = 0
+        self.prefill_is_done = True
         # Hack to ensure "wait_decode" appears at least once.
         self.wait_decode(wid=next_wid)
         if not self.should_finish():
