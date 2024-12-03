@@ -8,6 +8,7 @@ from typing import Optional, List, Iterable, TYPE_CHECKING, Union, TypedDict, Li
 from uuid import UUID
 
 from simdistserve.estimators.time_estimator import get_prefill_time, get_decode_time
+from simdistserve.utils import cal_kvcache_slots, cal_kvcache_token_size
 
 if TYPE_CHECKING:
     from simdistserve.base.scheduler import Scheduler
@@ -26,6 +27,8 @@ class WorkerConfig(TypedDict):
     decode_max_tokens: int  # Max tokens in a iteration forward (default = 10**7)
     enable_chunked_prefill: Optional[bool]  # Enable memory pressure simulation (default = False)
     engine_type: Literal["distserve", "vllm"]  # Engine type for prefill/decode time calculation (default = "distserve")
+    kv_cache_mem_per_gpu: int  # KV cache memory per GPU in GB (default = 10)
+    kv_transfer_bw: int  # KV transfer bandwidth in Gbps (default = 80)
 
     # TODO: Deprecated
     TP: Optional[int]  # Tensor parallelism (default = 1)
@@ -49,8 +52,8 @@ class Worker:
         enable_chunked_prefill=False,
         prefill_max_tokens=10 ** 7,
         decode_max_tokens=10 ** 7,
-        free_mem_slots_num=69230, # TODO: (Refactor) This is a magic number. Should be a configuration.
-        per_token_kvcache_transfertime=0.01, # TODO: (Refactor) This is a magic number. Should be a configuration.
+        kv_cache_mem_per_gpu=54,
+        kv_transfer_bw=80,
         decode_back_pressure: float = 0.9,
         engine_type: Literal["distserve", "vllm"] = "distserve",
     ):
@@ -103,11 +106,13 @@ class Worker:
         self._decode_ips: int = 0  # Elements in progress for decode
         self._wakeup_event = env.event()
         self.log: 'list[tuple[float, str, int, int, int, list[int], list[int]]]' = []
+        
+        kvcache_slot_num_per_gpu = cal_kvcache_slots(model_type, kv_cache_mem_per_gpu)
 
-        self.free_mem_slots_num = free_mem_slots_num # free slots for kv-cache
-        self.max_mem_slot_num = free_mem_slots_num
-        self.mem_slot_lower_bound = 0.1 * free_mem_slots_num # 10% of free slots
-        self.per_token_kvcache_transfertime = per_token_kvcache_transfertime
+        self.free_mem_slots_num = kvcache_slot_num_per_gpu * max(self.TP_Prefill, self.TP_Decode)
+        self.max_mem_slot_num = self.free_mem_slots_num
+        self.mem_slot_lower_bound = 0.1 * self.free_mem_slots_num # 10% of free slots
+        self.per_token_kvcache_transfertime = cal_kvcache_token_size(model_type) / (kv_transfer_bw * 1024) # in ms TODO: check the unit
 
         # Simulate scheduler delay in terms of number of decode rounds.
         self._prefill_sched_delay: int = 0
@@ -508,5 +513,3 @@ class Worker:
         self._log_event('decode_free_kvcache')
         return
 
-    def __del__(self):
-        assert self.free_mem_slots_num == self.max_mem_slot_num, f"worker:{self.wid} free_mem_slots_num: {self.free_mem_slots_num}, max_mem_slot_num: {self.max_mem_slot_num}"

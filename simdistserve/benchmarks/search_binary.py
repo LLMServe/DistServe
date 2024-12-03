@@ -13,6 +13,11 @@ def run_binary_search(
     backend: str,
     containment_targets: '(prefill_target, decode_target, prefill_containment, decode_containment)',
     max_per_gpu_rate: int = 16,
+    kv_cache_mem_per_gpu=54,
+    kv_transfer_bw=80,
+    prefill_instance=1,
+    decode_instance=1,
+    ratio_search=False,
     pid=0,
     esp=0.5,
     N=1000,
@@ -32,6 +37,8 @@ def run_binary_search(
             '--pp-prefill', f'{pp_cross * pp_prefill}',
             '--tp-decode', f'{tp_decode}',
             '--pp-decode', f'{pp_cross * pp_decode}',
+            '--prefill-instance', prefill_instance,
+            '--decode-instance', decode_instance,
         ]
     else:
         (tp, pp) = config
@@ -61,6 +68,8 @@ def run_binary_search(
         '--decode-containment', decode_containment,  # P90
         '--decode-target', decode_target,  # ms
         '--model', ModelTypes.formalize_model_name(model_type),
+        '--kv-cache-mem-per-gpu', kv_cache_mem_per_gpu,
+        '--kv-transfer-bw', kv_transfer_bw,
         '--workload', 'sharegpt',
         '--slas', '[]',
         '--slo-scales', '[1]',
@@ -102,7 +111,10 @@ def run_binary_search(
         pass
     # print(best_per_gpu_rate)
     if result is not None:
-        result[config] = best_per_gpu_rate
+        if ratio_search:
+            result[(prefill_instance, decode_instance)] = best_per_gpu_rate
+        else:
+            result[config] = best_per_gpu_rate
     return best_per_gpu_rate
 
 
