@@ -33,7 +33,7 @@ class DisaggCluster:
         for inst_id in range(N_prefill_instance):
             instance = []
             for i, p in enumerate(range(PP_prefill)):
-                worker = Worker(env, worker_id, cluster=self, pipe_rank=i, **worker_kwargs)
+                worker = Worker(env, worker_id, cluster=self, PP=PP_prefill, pipe_rank=i, **worker_kwargs)
                 instance.append(worker)
                 worker_id += 1
 
@@ -47,7 +47,7 @@ class DisaggCluster:
         for inst_id in range(N_decode_instance):
             instance = []
             for i, p in enumerate(range(PP_decode)):
-                worker = Worker(env, worker_id, cluster=self, pipe_rank=i, **worker_kwargs)
+                worker = Worker(env, worker_id, cluster=self, PP=PP_decode, pipe_rank=i, **worker_kwargs)
                 instance.append(worker)
                 worker_id += 1
 

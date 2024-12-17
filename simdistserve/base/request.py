@@ -65,13 +65,25 @@ class Request:
         self.chunk_id = None
         # after the request is finished prefill, `kvcache_generated` should be set to `True`.
         self.kvcache_generated = False
-        self.prefill_is_done = False
-        self.kvcache_is_transferred = False
-        self.prefill_worker = None
+        self.prefill_is_finished = False
+        # workers do frefill/deocde in PP.
+        self.prefill_workers = []
+        self.decode_workers = []
+        # workers already sent/received kvcache.
+        self.migrated_prefill_workers = []
+        self.migrated_decode_workers = []
+        # migrate finished event
+        self.migrate_event = None
+        # migrate time for one prefill worker
+        self.migrate_time = 0
 
     @property
     def current_context_len(self):
         return self.prefill_lens + max(0, self.counter)
+    
+    @property
+    def kvcache_migrate_is_done(self):
+        return len(self.migrated_prefill_workers) == len(self.prefill_workers)
 
     def _log_event(self, event, wid=-1):
         if not self.env:
@@ -124,7 +136,7 @@ class Request:
         # Reset counter to 0
         # TODO: Should we do self.counter += 1?
         self.counter = 0
-        self.prefill_is_done = True
+        self.prefill_is_finished = True
         # Hack to ensure "wait_decode" appears at least once.
         self.wait_decode(wid=next_wid)
         if not self.should_finish():

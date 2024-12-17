@@ -49,6 +49,7 @@ class Worker:
         TP: int = 1,
         TP_Prefill: int = None,
         TP_Decode: int = None,
+        PP: int = 1,
         enable_chunked_prefill=False,
         prefill_max_tokens=10 ** 7,
         decode_max_tokens=10 ** 7,
@@ -67,6 +68,7 @@ class Worker:
 
         # TODO: (Deprecate) TP should be deprecate in favor of TP_prefill and TP_decode.
         self.TP = TP
+        self.PP = PP
         self.TP_Prefill = TP_Prefill
         self.TP_Decode = TP_Decode
         if (self.TP_Prefill is None) and (self.TP_Decode is None):
@@ -138,9 +140,8 @@ class Worker:
         # print(item)
         return
 
-    def run(self):
+    def run_compute(self): # compute loop
         while True:
-            self.check_migrate_queue()
             if not (self.prefill_queue or self.decode_queue):
                 yield self._wakeup_event
 
@@ -151,11 +152,37 @@ class Worker:
                     yield self.env.timeout(0.1)  # avoid dead lock
             else:
                 yield from self.do_decode()
+            self._log_event("compute_wait")
 
-            self._log_event("wait")
-            pass
+    def run_migrate(self): # migrate loop
+        while True:
+            if not self.migrate_queue:
+                yield self._wakeup_event
+                
+            migrate_queue_len = len(self.migrate_queue)
+            migrate_time = 0
+            for i in range(migrate_queue_len):
+                request = self.migrate_queue.popleft()
+                if request.kvcache_migrate_is_done: 
+                    # all prefill workers have sent the kv-cache
+                    raise
+                    continue
+                migrate_time += request.migrate_time
+                assert self.wid not in request.migrated_prefill_workers
+                request.migrated_prefill_workers.append(self.wid)
+                if request.kvcache_migrate_is_done: # all prefill workers have sent the kv-cache
+                    request.migrate_event.succeed()
+                    for worker in request.prefill_workers: # free the kv-cache
+                        yield worker.env.process(worker.prefill_free_kvcache([request,]))
+                    
+            yield self.env.timeout(migrate_time)
+            self._log_event("migrate_wait")
 
-        pass
+    def run(self):
+        compute_task = self.env.process(self.run_compute())
+        migrate_task = self.env.process(self.run_migrate())
+        yield self.env.all_of([compute_task, migrate_task])
+
 
     def add_ray_overhead(self, sum_of_tokens) -> int:
         base_overhead = 2
@@ -214,43 +241,47 @@ class Worker:
         else:
             available_slots = self.free_mem_slots_num // 128 # batch size control
         
-        for _ in range(_decode_len):
+        for _ in range(_decode_len): # choose batch
             left_req = self.decode_queue[0]
             self.decode_queue.popleft()
-            if not left_req.kvcache_is_transferred: # requests just finished prefill
+            if self.wid not in left_req.migrated_decode_workers: # requests need to migrate kv-cache 
+                kv_cache_size = left_req.current_context_len / self.PP
                 if not decode_all_kinds_requests:
                     requests_give_up.append(left_req) # needs kv-cache migrate, give up
                     continue
-                elif available_slots > left_req.current_context_len : # memory is enough, migrate kv-cache
-                    available_slots -= left_req.current_context_len
+                elif available_slots > kv_cache_size: # memory is enough, migrate kv-cache
+                    available_slots -= kv_cache_size 
                     decode_reqs.append(left_req)
                 else: # memory is not enough, give up the request
                     requests_give_up.append(left_req)
             else: # common requests
-                if available_slots <= 1:
+                if available_slots < 1:
                     requests_give_up.append(left_req)
                     continue
                 decode_reqs.append(left_req)
                 available_slots -= 1
 
 
-            
         # put the requests kicked back to the queue from front
         while len(requests_give_up) > 0:
             self.decode_queue.appendleft(requests_give_up.pop())
         assert len(self.decode_queue) + len(decode_reqs) == _decode_len
             
         # kv-cache transfer
-        migrate_time = 0
+        migrate_requests = []
+        
         for r in list(decode_reqs):
-            if not r.kvcache_is_transferred: 
-                if r.prefill_worker.wid != self.wid: # if the kv-cache is not in the worker, then migrate
-                    migrate_time += self.per_token_kvcache_transfertime * r.current_context_len
-                self.migrate_alloc_kvcache([r,])
-                r.prefill_worker.wakeup()
+            if self.wid not in r.migrated_decode_workers: # need to migrate kv-cache
+                if self.wid not in [w.wid for w in r.prefill_workers]: # if the kv-cache is not in the worker, then migrate
+                    # r.migrate_time means the time cost to migrate the kv-cache for each prefill worker
+                    r.migrate_time = self.per_token_kvcache_transfertime * r.current_context_len / len(r.prefill_workers)
+                    migrate_requests.append(r)
+                for worker in r.prefill_workers: # make sure all prefill workers are waken up and migrate the kv-cache
+                    worker.wakeup()
+                yield self.env.process(self.migrate_alloc_kvcache([r,]))
             
-        yield self.env.timeout(migrate_time)
-        self.decode_alloc_kvcache(decode_reqs)
+        if decode_reqs: # allocate kv-cache for the requests
+            self.decode_alloc_kvcache(decode_reqs)
          
         for r in decode_reqs:
             r.do_decode(wid=self.wid)
@@ -335,25 +366,34 @@ class Worker:
     def _exit_prefill(self, prefill_items: List['Request']):
         # if a request finished prefill, it should be migrated to other workers
         requests_need_migrate = [] 
+        forward_decode_requests = []
         
         for item in prefill_items:
             next_wid = self.next_worker.wid if self.next_worker else None
             item.finish_prefill(is_finished_one_round=self.is_last_in_pipeline, wid=self.wid, next_wid=next_wid)
-            if item.prefill_is_done:
-                item.prefill_worker = self
-                requests_need_migrate.append(item)
+            # add the worker self to the prefill_workers list
+            item.prefill_workers.append(self)
+            item.prefill_workers = list(set(item.prefill_workers))
+            
             if not self.is_last_in_pipeline or (item.remain_prefill_lens > 0):
                 # Finish one chunk of prefill. Now forward to the next worker
                 # (or head of worker) to do the rest of the parts.
                 self.forward_prefill(item)
                 continue
-
+            if item.prefill_is_finished: # need to migrate kv-cache
+                requests_need_migrate.append(item)
             # Arrive at worker who is at the last of pipeline.
             if item.should_finish():
                 # ... just a sanity check to avoid any infinite loop.
                 continue
+            forward_decode_requests.append(item)
+            
+        for r in requests_need_migrate: # prefill is finished, migrate the kv-cache
+            r.migrate_event = self.env.event()
+            for worker in r.prefill_workers:
+                worker.migrate_kvcache([r,])
+        for item in forward_decode_requests:
             self.forward_decode(item, to_scheduler=(not self.should_request_stay))
-        self.migrate_kvcache(requests_need_migrate)
         return
 
     def _exit_decode(self, decode_reqs: 'List[Request]'):
@@ -364,10 +404,14 @@ class Worker:
         next_wid = self.next_worker.wid if self.next_worker else None
         for r in decode_reqs:
             r.finish_decode(is_finished_one_round=self.is_last_in_pipeline, next_wid=next_wid)
+            r.decode_workers.append(self) # add the worker self to the decode_workers list
+            r.decode_workers = list(set(r.decode_workers))
             if r._terminated:
                 finished_requests.append(r)
         next_decode_batch = tuple(r for r in decode_reqs if not r.should_finish())
-        self.decode_free_kvcache(finished_requests)
+        for r in finished_requests: # free all the kv-cache: prefilled and decoded
+            for worker in r.decode_workers:
+                worker.decode_free_kvcache([r,])
         self.forward_decode(next_decode_batch)
         return
 
@@ -438,33 +482,11 @@ class Worker:
         self._exit_decode(decode_reqs)
         return
 
-    pass
 
-    def check_migrate_queue(self):
-        # check if requests' kv-cache is received by other workers, if yes then free the slots
-        _migrate_queue_len = len(self.migrate_queue)
-        if len(self.migrate_queue) == 0:
-            return
-        migrated_requests = []
-        stay_requests = []
-        for i in range(len(self.migrate_queue)):
-            r = self.migrate_queue.popleft()
-            if r.kvcache_is_transferred:
-                migrated_requests.append(r)
-            else:
-                stay_requests.append(r)
-        for r in stay_requests:
-            self.migrate_queue.append(r)
-        assert len(migrated_requests) + len(stay_requests) == _migrate_queue_len
-        if migrated_requests:
-            self.prefill_free_kvcache(migrated_requests)
 
-    def mem_is_enough(self, requests: List['Request']=[]) -> bool:
-        assert self.free_mem_slots_num <= self.max_mem_slot_num
+    def mem_is_enough(self) -> bool:
+        assert self.free_mem_slots_num <= self.max_mem_slot_num, f"Worker {self.wid} free_mem_slots_num: {self.free_mem_slots_num}, max_mem_slot_num: {self.max_mem_slot_num}"
         assert self.free_mem_slots_num >= 0
-
-        if requests and all(r.counter > 0 for r in requests):
-            return True
 
         return self.free_mem_slots_num >= self.mem_slot_lower_bound
 
@@ -483,33 +505,46 @@ class Worker:
             return False
         for i in requests:
             i.kvcache_generated = True
-        self.free_mem_slots_num -= sum([request.current_prefill_lens for request in requests]) 
+        kvcache_size = sum([request.current_prefill_lens for request in requests]) / self.PP
+        self.free_mem_slots_num -= kvcache_size
         self._log_event('prefill_alloc_kvcache')
         return True
 
 
     def prefill_free_kvcache(self, requests: 'list[Request]') -> None: 
         # called by prefill worker, free the slots immediately after kv-cache migration finished
-        self.free_mem_slots_num += sum([request.prefill_lens for request in requests]) 
+        for r in requests: # waiting for all prefill workers to migrate the kv-cache
+            yield r.migrate_event
+        kvcache_size = 0
+        for r in requests:
+            assert self.wid in [w.wid for w in r.prefill_workers]
+            if self.wid in [w.wid for w in r.prefill_workers] :
+                kvcache_size += r.prefill_lens / self.PP
+        self.free_mem_slots_num += kvcache_size
         self._log_event('prefill_free_kvcache')
         return
 
     def migrate_alloc_kvcache(self, requests: 'list[Request]') -> bool:
         # called by the decode worker, prepare for the kv-cache migration
-        assert not any([request.kvcache_is_transferred for request in requests]), "The kv-cache is already transferred."
-        self.free_mem_slots_num -= sum([(request.prefill_lens) for request in requests])
+        kvcache_size = sum([request.current_context_len for request in requests]) / self.PP
+        self.free_mem_slots_num -= kvcache_size
         for r in requests:
-            r.kvcache_is_transferred = True
+            yield r.migrate_event
+            r.migrated_decode_workers.append(self.wid) # mark the decode worker has received the kv-cache
 
     def decode_alloc_kvcache(self, requests: 'list[Request]') -> bool:
         # for each request, decode once cost one slot
-        self.free_mem_slots_num -= len(requests)
+        kvcache_size = len(requests) / self.PP
+        self.free_mem_slots_num -= kvcache_size
         self._log_event('decode_alloc_kvcache')
         return True
 
     def decode_free_kvcache(self, requests: 'list[Request]') -> None:
         # free the slots immediately after decoding finished
-        self.free_mem_slots_num += sum([(request.current_context_len) for request in requests])
+        kvcache_size = sum([(request.current_context_len) for request in requests]) / self.PP
+        self.free_mem_slots_num += kvcache_size
         self._log_event('decode_free_kvcache')
         return
 
+    def __del__(self):
+        assert self.free_mem_slots_num == self.max_mem_slot_num, f"worker:{self.wid} free_mem_slots_num: {self.free_mem_slots_num}, max_mem_slot_num: {self.max_mem_slot_num}"

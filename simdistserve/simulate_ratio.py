@@ -23,6 +23,10 @@ def parse_args():
                         help="Prefill TTFT attainment target in ms (default 200ms)")
     parser.add_argument("--decode-target", type=int, default=100,
                         help="Decode TPOT attainment target in ms (default 100ms)")
+    parser.add_argument("--max-prefill-instances", type=int, default=8,
+                        help="Max prefill instances to search (default 8)")
+    parser.add_argument("--max-decode-instances", type=int, default=8,
+                        help="Max decode instances to search (default 8)")
     parser.add_argument("--prefill-percentage", type=int, default=90,
                         help="Percentage of prefill target (default P90)")
     parser.add_argument("--decode-percentage", type=int, default=90,
@@ -96,6 +100,8 @@ if __name__ == '__main__':
         is_dist_high=args.is_high_affinity,
         backend=args.backend,
         attainment=(args.prefill_target, args.decode_target, args.prefill_percentage, args.decode_percentage),
+        max_prefill_instance=args.max_prefill_instances,
+        max_decode_instance=args.max_decode_instances,
         max_per_gpu_rate=args.max_per_gpu_rate,
         kv_cache_mem_per_gpu=args.kv_cache_mem_per_gpu,
         kv_transfer_bw=args.kv_transfer_bw,

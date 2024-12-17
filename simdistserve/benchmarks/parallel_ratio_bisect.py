@@ -23,6 +23,7 @@ def main(
     model_type: ModelTypes,
     is_dist_high: bool = True,
     backend: str = "distserve", attainment=(200, 100, 90, 90),
+    max_prefill_instance=8, max_decode_instance=8,
     max_per_gpu_rate=5, 
     kv_cache_mem_per_gpu=54, kv_transfer_bw=80,
     esp=0.25, N=1000,
@@ -34,13 +35,12 @@ def main(
     configs = [(1, prefill_tp, prefill_pp, decode_tp, decode_pp)]
     
     if backend == "distserve":
-        # ratio from 1:4 to 4:1
         ratios = []
-        decode_instance = 8
-        for prefilled_instance in range(decode_instance // 4, decode_instance * 4 + 1):
-            frac = Fraction(prefilled_instance, decode_instance)
-            ratios.append((frac.numerator, frac.denominator))
-        pass
+        for prefill_instance in range(1, max_prefill_instance + 1):
+            for decode_instance in range(1, max_decode_instance + 1):
+                frac = Fraction(prefill_instance, decode_instance)
+                ratios.append((frac.numerator, frac.denominator))
+        ratios = list(set(ratios))
     else:
         raise ValueError(f"Unsupported backend for ratio search: {backend}")
 
