@@ -29,6 +29,9 @@ import argparse
 from glob import glob
 from torch import nn
 from typing import Callable, Dict, Optional, Tuple
+from distserve.logger import init_logger
+
+logger = init_logger(__name__)
 
 #######################
 #    Preprocessors    #
@@ -417,15 +420,17 @@ def convert_weights(
     # Load the state dict (tensor_dict)
     # If the whole model is saved in a single file, then load the state dict directly
     # otherwise, load them separately and merge them into a single state dict
-    input_files = glob(input)
-    if len(input_files) == 0:
+    bin_files = glob(os.path.join(input, '*.bin'))
+    #logger.info(f"Find bin files : {bin_files}.") 
+    #input_files = glob(input)
+    if len(bin_files) == 0:
         ValueError(f"Input {input} does not match any files")
         print(f"Input {input} does not match any files")
         exit(1)
     
     # Load file(s)
     state_dict = {}
-    for file in input_files:
+    for file in bin_files:
         print(f"Loading {file}")
         state_dict.update(torch.load(file, torch.device("cpu")))
 

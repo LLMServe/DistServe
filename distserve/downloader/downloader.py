@@ -110,11 +110,6 @@ def download_and_convert_weights(model_config: ModelConfig) -> str:
         
         # if the user provides a local path
         is_local = os.path.isdir(model_name_or_path)
-        if is_local:
-            if model_name_or_path[-1] == '/':
-                return model_name_or_path
-            else:
-                return model_name_or_path + '/'
         
         # if the model weights have already been downloaded and converted before
         cache_dir = DISTSERVE_CACHE
@@ -127,7 +122,11 @@ def download_and_convert_weights(model_config: ModelConfig) -> str:
             return storage_folder
         
         # download and convert model weights
-        hf_files = prepare_hf_model_weigths(model_name_or_path)
+        hf_files = ""
+        if is_local:
+            hf_files = model_name_or_path
+        else:
+            hf_files = prepare_hf_model_weigths(model_name_or_path)
         convert_weights(hf_files, storage_folder, dtype, model)
         file = open(done_file, 'w')
         file.close()
