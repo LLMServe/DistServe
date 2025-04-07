@@ -117,13 +117,15 @@ def preprocess_llama2(tensor_dict: Dict[str, torch.Tensor])\
     V_WEIGHT = PREFIX + "layers.{0}.self_attn.v_proj.weight"
     O_WEIGHT = PREFIX + "layers.{0}.self_attn.o_proj.weight"
 
-    num_layers = max(int(regex.findall(x)[0]) for x in filter(regex.match, tensor_dict)) + 1
-
+    end_layers = max(int(regex.findall(x)[0]) for x in filter(regex.match, tensor_dict)) + 1
+    beg_layers = min(int(regex.findall(x)[0]) for x in filter(regex.match, tensor_dict))
+    
     head_dim = 128
-    num_q_heads = tensor_dict[Q_WEIGHT.format(0)].size(0) // head_dim
+    num_q_heads = tensor_dict[Q_WEIGHT.format(24)].size(0) // head_dim
 
     # Coallesce wq, qk, qv into one tensor, layers.{i}.attention.wqkv.weight
-    for i in range(num_layers):
+
+    for i in range(beg_layers,end_layers):
         q = tensor_dict[Q_WEIGHT.format(i)].T  # [hidden_size, num_q_heads*head_dim]
         k = tensor_dict[K_WEIGHT.format(i)].T  # [hidden_size, num_kv_heads*head_dim]
         v = tensor_dict[V_WEIGHT.format(i)].T  # [hidden_size, num_kv_heads*head_dim]
@@ -134,7 +136,7 @@ def preprocess_llama2(tensor_dict: Dict[str, torch.Tensor])\
         del tensor_dict[V_WEIGHT.format(i)]
 
     # Transpose wo
-    for i in range(num_layers):
+    for i in range(beg_layers,end_layers):
         tensor_dict[O_WEIGHT.format(i)] = \
             tensor_dict[O_WEIGHT.format(i)].T.contiguous()  # [num_q_heads*head_dim, hidden_size]
 
@@ -441,6 +443,7 @@ def convert_weights(
     # Preprocess
     print("Preprocessing")
     preprocessor = PREPROCESSOR[model]
+    print(state_dict)
     tensor_dict, num_q_heads, head_dim = preprocessor(state_dict)
 
     # The final step: divide the weights and save them to files
