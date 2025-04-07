@@ -4,6 +4,8 @@ import time
 from functools import reduce
 from itertools import chain
 from typing import List
+from transformers import PretrainedConfig
+from simdistserve.constants import ModelTypes
 
 _verbose = True
 
@@ -65,3 +67,21 @@ def irange(*args):
         x, y, z = args
         return range(x, y + 1, z)
     raise ValueError(f"args={args}")
+
+def cal_kvcache_token_size(model_name: str): 
+    # in KB
+    model_name = ModelTypes.formalize_model_name(model_name)
+    model_config = PretrainedConfig.from_pretrained(model_name)
+    
+    hidden_size = model_config.hidden_size
+    layer_num = model_config.num_hidden_layers
+    return 2 * 2 * hidden_size * layer_num / 1024
+    
+    
+
+def cal_kvcache_slots(
+    model_name: str,
+    memory: int, # in GB
+):
+    token_size = cal_kvcache_token_size(model_name) # in KB
+    return 1024 * 1024 * memory // token_size

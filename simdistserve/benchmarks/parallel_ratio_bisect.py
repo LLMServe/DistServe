@@ -5,6 +5,7 @@ from time import sleep
 
 import pandas as pd
 from tqdm import tqdm
+from fractions import Fraction
 
 from simdistserve.benchmarks.search_binary import run_binary_search
 from simdistserve.benchmarks.search_configs import get_distserve_configs, get_vllm_config
@@ -17,9 +18,12 @@ MAX_CPU_COUNT = min(os.cpu_count() - 2, 32)
 
 
 def main(
-    num_node: int, num_gpu_per_node: int, model_type: ModelTypes,
+    prefill_pp: int, prefill_tp: int,
+    decode_pp: int, decode_tp: int,
+    model_type: ModelTypes,
     is_dist_high: bool = True,
     backend: str = "distserve", attainment=(200, 100, 90, 90),
+    max_prefill_instance=8, max_decode_instance=8,
     max_per_gpu_rate=5, 
     kv_cache_mem_per_gpu=54, kv_transfer_bw=80,
     esp=0.25, N=1000,
@@ -28,33 +32,39 @@ def main(
     """
     :return result: dict that maps config to the best_per_gpu_rate (int)
     """
+    configs = [(1, prefill_tp, prefill_pp, decode_tp, decode_pp)]
+    
     if backend == "distserve":
-        configs = get_distserve_configs(
-            model_type, num_node, num_gpu_per_node, is_dist_high
-        )
-    elif backend == "vllm":
-        configs = get_vllm_config(
-            model_type, num_node * num_gpu_per_node
-        )
+        ratios = []
+        for prefill_instance in range(1, max_prefill_instance + 1):
+            for decode_instance in range(1, max_decode_instance + 1):
+                frac = Fraction(prefill_instance, decode_instance)
+                ratios.append((frac.numerator, frac.denominator))
+        ratios = list(set(ratios))
+    else:
+        raise ValueError(f"Unsupported backend for ratio search: {backend}")
 
     processes = []
     # Add a multiproc shared dict
     with Manager() as manager:
         result = manager.dict()
-        pbar = tqdm(enumerate(configs), total=len(configs))
-        for pid, config in pbar:
+        pbar = tqdm(enumerate(ratios), total=len(ratios))
+        for pid, ratio in pbar:
             proc = Process(
                 target=run_binary_search,
                 args=(
-                    model_type, config,
+                    model_type, configs[0],
                     backend, attainment,
                 ),
                 kwargs=dict(
                     kv_cache_mem_per_gpu=kv_cache_mem_per_gpu,
                     kv_transfer_bw=kv_transfer_bw,
                     max_per_gpu_rate=max_per_gpu_rate,
+                    prefill_instance=ratio[0],
+                    decode_instance=ratio[1],
                     pid=pid, esp=esp,
                     N=N, result=result,
+                    ratio_search=True,
                     debug=True,
                 )
             )
@@ -81,7 +91,7 @@ def main(
         return result
 
 
-simulate_bisect_search = main
+simulate_bisect_ratio_search = main
 
 if __name__ == '__main__':
     data = []

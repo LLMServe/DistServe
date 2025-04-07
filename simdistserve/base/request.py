@@ -7,6 +7,8 @@ E_WAIT_PREFILL = "wait_prefill"
 E_DO_PREFILL = "do_prefill"
 E_WAIT_DECODE = "wait_decode"
 E_DO_DECODE = "do_decode"
+E_WAIT_KVCACHE_MIGRATION = "wait_kvcache_migration"
+E_DO_KVCACHE_MIGRATION = "do_kvcache_migration"
 E_FINISH_PREFILL = "finish_prefill"
 E_FINISH_DECODE = "finish_decode"
 E_EXIT_SYSTEM = "exit_system"
@@ -61,10 +63,27 @@ class Request:
         # set this value if a request belongs to a particular chunk
         # The last worker in the pipeline unset this value at a chunk's end.
         self.chunk_id = None
+        # after the request is finished prefill, `kvcache_generated` should be set to `True`.
+        self.kvcache_generated = False
+        self.prefill_is_finished = False
+        # workers do frefill/deocde in PP.
+        self.prefill_workers = []
+        self.decode_workers = []
+        # workers already sent/received kvcache.
+        self.migrated_prefill_workers = []
+        self.migrated_decode_workers = []
+        # migrate finished event
+        self.migrate_event = None
+        # migrate time for one prefill worker
+        self.migrate_time = 0
 
     @property
     def current_context_len(self):
         return self.prefill_lens + max(0, self.counter)
+    
+    @property
+    def kvcache_migrate_is_done(self):
+        return len(self.migrated_prefill_workers) == len(self.prefill_workers)
 
     def _log_event(self, event, wid=-1):
         if not self.env:
@@ -88,6 +107,12 @@ class Request:
 
     def do_decode(self, wid=None):
         self._log_event(E_DO_DECODE, wid=wid)
+        
+    def wait_kvcache_migration(self, wid=None):
+        self._log_event(E_WAIT_KVCACHE_MIGRATION, wid=wid)
+    
+    def do_kvcache_migration(self, wid=None):
+        self._log_event(E_DO_KVCACHE_MIGRATION, wid=wid)
 
     def _reset_chunked_prefill_metadata(self):
         """Reset the metadata of chunked prefill."""
@@ -111,6 +136,7 @@ class Request:
         # Reset counter to 0
         # TODO: Should we do self.counter += 1?
         self.counter = 0
+        self.prefill_is_finished = True
         # Hack to ensure "wait_decode" appears at least once.
         self.wait_decode(wid=next_wid)
         if not self.should_finish():

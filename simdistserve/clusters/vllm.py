@@ -29,7 +29,7 @@ class VLLMCluster:
         for inst_id in range(N_instance):
             instance = []
             for i, p in enumerate(range(PP)):
-                worker = Worker(env, worker_id, cluster=self, pipe_rank=i, **worker_kwargs)
+                worker = Worker(env, worker_id, cluster=self, PP=PP, pipe_rank=i, **worker_kwargs)
                 instance.append(worker)
                 worker_id += 1
 

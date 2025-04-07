@@ -65,6 +65,12 @@ def parse_args(args_=None):
     parser.add_argument('--output-request-latency', type=str, default=None, help='Output per-request latency (csv)')
     parser.add_argument('--output-worker', type=str, default=None,
                         help='Output per-worker per-iteration time (csv)')
+    parser.add_argument('--kv-cache-mem-per-gpu', type=int, default=54,
+                        help='KV cache memory per GPU in GB (default 10GB)')
+    parser.add_argument('--kv-transfer-bw', type=int, default=80,
+                        help='KV transfer bandwidth in Gbps (default 80Gbps)')
+    parser.add_argument('--prefill-instance', type=int, default=1, help='Number of prefill instances (used in DistServe)')
+    parser.add_argument('--decode-instance', type=int, default=1, help='Number of decode instances (used in DistServe)')
     parser.add_argument('--prefill-containment', type=int, default=None,
                         help='Containment target for prefill')
     parser.add_argument('--prefill-target', type=int, default=200,
@@ -145,7 +151,13 @@ def main(args, outputs=None):
     PP_prefill = args.pp_prefill
     TP_Decode = args.tp_decode
     PP_decode = args.pp_decode
-
+    
+    prefill_instance = args.prefill_instance
+    decode_instance = args.decode_instance
+    
+    kv_cache_mem_per_gpu = args.kv_cache_mem_per_gpu
+    kv_transfer_bw = args.kv_transfer_bw
+    
     #
     # Handle vllm in data processing
     #
@@ -176,6 +188,8 @@ def main(args, outputs=None):
             decode_max_batch_size=10 ** 7,  # inf
             prefill_max_tokens=prefill_max_tokens,
             decode_max_tokens=decode_max_tokens,
+            kv_cache_mem_per_gpu=kv_cache_mem_per_gpu,
+            kv_transfer_bw=kv_transfer_bw,
             enable_chunked_prefill=False,
             engine_type=args.backend,
         )
@@ -191,12 +205,15 @@ def main(args, outputs=None):
             decode_max_batch_size=10 ** 7,  # inf
             prefill_max_tokens=prefill_max_tokens,
             decode_max_tokens=decode_max_tokens,
+            kv_cache_mem_per_gpu=kv_cache_mem_per_gpu,
+            kv_transfer_bw=kv_transfer_bw,
             enable_chunked_prefill=False,
             engine_type=args.backend,
         )
 
         cluster = DisaggCluster(
-            env=env, PP_prefill=PP_prefill, PP_decode=PP_decode,
+            env=env, N_prefill_instance=prefill_instance, N_decode_instance=decode_instance,
+            PP_prefill=PP_prefill, PP_decode=PP_decode,
             worker_configs=worker_config,
         )
     else:

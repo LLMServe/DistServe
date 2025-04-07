@@ -48,7 +48,30 @@ Ideally you should get the following result:
 Best per GPU rate: 1.56
 Best config: pp_cross=1, tp_prefill=2, pp_prefill=1, tp_decode=1, pp_decode=1
 ```
-
+### Ratio search
+Given the parallel strategy of prefill and decoding instances, search for the best config ratio M:N.
+```bash
+python -m simdistserve.simulate_ratio \
+    --prefill-tp 8 \
+    --prefill-pp 1 \
+    --decode-tp 8 \
+    --decode-pp 1 \
+    --max-prefill-instances 8 \
+    --max-decode-instances 8 \
+    --kv-cache-mem-per-gpu 64 \
+    --kv-transfer-bw 600 \
+    --model-type "facebook/opt-66b" \
+    --workload sharegpt --backend distserve \
+    --prefill-target 200 --decode-target 100 \
+    --prefill-percentage 90 --decode-percentage 90 \
+    --max-per-gpu-rate 5 \
+    --esp 0.25 \
+    --N 300
+```
+Output:
+```text
+Best config: prefill_instance=8, decode_instance=3, per_gpu_rate=2.1875
+```
 ## Architecture
 
 The simulator is written on top of `simpy`, a discrete event simulator built natively in Python. 
